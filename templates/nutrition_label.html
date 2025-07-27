@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영양정보 라벨 생성 - 나만의 통관 수출 도우미</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            padding: 2rem;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
+        }
+        
+        .coming-soon {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        
+        .coming-soon-icon {
+            font-size: 5rem;
+            color: var(--secondary-color);
+            margin-bottom: 2rem;
+        }
+        
+        .btn-back {
+            background: var(--secondary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-asia me-2"></i>
+                나만의 통관 수출 도우미
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/customs-analysis">통관 분석</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/regulation-info">규제 정보</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="text-center mb-4">
+                        <i class="fas fa-tag me-3"></i>
+                        영양정보 라벨 생성
+                    </h1>
+                    <p class="text-center text-muted mb-4">
+                        국가별 규제에 맞는 영양정보 라벨을 자동 생성합니다
+                    </p>
+                </div>
+            </div>
+
+            <!-- 라벨 생성 폼 -->
+            <form id="labelForm">
+                <div class="form-section">
+                    <h3 class="mb-3">
+                        <i class="fas fa-flag me-2"></i>
+                        기본 정보
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="labelCountry" class="form-label">수출 대상국</label>
+                            <select class="form-select" id="labelCountry" required>
+                                <option value="">국가를 선택하세요</option>
+                                <option value="중국">🇨🇳 중국 (GB 7718-2025)</option>
+                                <option value="미국">🇺🇸 미국 (FDA)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="labelProductName" class="form-label">제품명</label>
+                            <input type="text" class="form-control" id="labelProductName" placeholder="제품명을 입력하세요" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="mb-3">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        영양성분 정보
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="calories" class="form-label">칼로리 (kcal)</label>
+                            <input type="number" class="form-control" id="calories" placeholder="칼로리" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="protein" class="form-label">단백질 (g)</label>
+                            <input type="number" step="0.1" class="form-control" id="protein" placeholder="단백질" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fat" class="form-label">지방 (g)</label>
+                            <input type="number" step="0.1" class="form-control" id="fat" placeholder="지방" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="carbs" class="form-label">탄수화물 (g)</label>
+                            <input type="number" step="0.1" class="form-control" id="carbs" placeholder="탄수화물" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <label for="sodium" class="form-label">나트륨 (mg)</label>
+                            <input type="number" class="form-control" id="sodium" placeholder="나트륨" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sugar" class="form-label">당류 (g)</label>
+                            <input type="number" step="0.1" class="form-control" id="sugar" placeholder="당류" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fiber" class="form-label">식이섬유 (g)</label>
+                            <input type="number" step="0.1" class="form-control" id="fiber" placeholder="식이섬유" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="servingSize" class="form-label">1회 제공량 (g)</label>
+                            <input type="number" class="form-control" id="servingSize" placeholder="제공량" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        알레르기 정보
+                    </h3>
+                    <div class="checkbox-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy1" value="우유">
+                            <label class="form-check-label" for="allergy1">우유</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy2" value="계란">
+                            <label class="form-check-label" for="allergy2">계란</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy3" value="대두">
+                            <label class="form-check-label" for="allergy3">대두</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy4" value="밀">
+                            <label class="form-check-label" for="allergy4">밀</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy5" value="땅콩">
+                            <label class="form-check-label" for="allergy5">땅콩</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy6" value="견과류">
+                            <label class="form-check-label" for="allergy6">견과류</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy7" value="조개류">
+                            <label class="form-check-label" for="allergy7">조개류</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allergy8" value="어류">
+                            <label class="form-check-label" for="allergy8">어류</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-magic me-2"></i>
+                        라벨 생성하기
+                    </button>
+                </div>
+            </form>
+
+            <!-- 로딩 섹션 -->
+            <div id="loadingSection" class="loading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">라벨을 생성하고 있습니다...</p>
+            </div>
+
+            <!-- 결과 섹션 -->
+            <div id="resultsSection" style="display: none;">
+                <h3 class="mb-3">
+                    <i class="fas fa-image me-2"></i>
+                    생성된 라벨
+                </h3>
+                <div id="labelContainer"></div>
+            </div>
+
+            <!-- 에러 섹션 -->
+            <div id="errorSection" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('labelForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 알레르기 정보 수집
+            const allergies = [];
+            for (let i = 1; i <= 8; i++) {
+                const checkbox = document.getElementById(`allergy${i}`);
+                if (checkbox.checked) {
+                    allergies.push(checkbox.value);
+                }
+            }
+            
+            // 폼 데이터 수집
+            const formData = {
+                country: document.getElementById('labelCountry').value,
+                product_info: {
+                    name: document.getElementById('labelProductName').value,
+                    nutrition: {
+                        calories: parseInt(document.getElementById('calories').value),
+                        protein: parseFloat(document.getElementById('protein').value),
+                        fat: parseFloat(document.getElementById('fat').value),
+                        carbs: parseFloat(document.getElementById('carbs').value),
+                        sodium: parseInt(document.getElementById('sodium').value),
+                        sugar: parseFloat(document.getElementById('sugar').value),
+                        fiber: parseFloat(document.getElementById('fiber').value),
+                        serving_size: parseInt(document.getElementById('servingSize').value)
+                    },
+                    allergies: allergies
+                }
+            };
+            
+            // UI 상태 변경
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            
+            // API 호출
+            fetch('/api/nutrition-label', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorSection').style.display = 'block';
+                } else {
+                    displayLabel(data.label_data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('errorMessage').textContent = '서버 오류가 발생했습니다.';
+                document.getElementById('errorSection').style.display = 'block';
+            });
+        });
+
+        function displayLabel(labelData) {
+            const container = document.getElementById('labelContainer');
+            let html = '';
+            
+            if (labelData.text_content) {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-file-text me-2"></i>
+                                라벨 텍스트 내용
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <pre class="bg-light p-3 rounded">${labelData.text_content}</pre>
+                            <button class="btn btn-primary btn-sm" onclick="downloadLabel('label_text', \`${labelData.text_content}\`)">
+                                <i class="fas fa-download me-2"></i>
+                                텍스트 다운로드
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (labelData.image_path) {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-image me-2"></i>
+                                라벨 이미지
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <img src="${labelData.image_path}" class="img-fluid mb-3" alt="영양정보 라벨">
+                            <br>
+                            <a href="${labelData.image_path}" class="btn btn-primary btn-sm" download>
+                                <i class="fas fa-download me-2"></i>
+                                이미지 다운로드
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function downloadLabel(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html> 

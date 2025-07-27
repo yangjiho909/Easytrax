@@ -1,0 +1,656 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+🏷️ 고도화된 영양정보 라벨 생성 시스템
+- 2027년 중국 GB 7718-2025 규정 반영
+- 2025년 미국 FDA 새로운 라벨링 규정 반영
+- QR코드 디지털 라벨, FOP 라벨 등 최신 기능 포함
+"""
+
+import os
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime, timedelta
+import json
+import requests
+from typing import Dict, List, Optional, Tuple
+import base64
+
+class AdvancedLabelGenerator:
+    """2027년 중국, 2025년 미국 규정을 반영한 고도화된 라벨 생성기"""
+    
+    def __init__(self):
+        self.label_width = 500
+        self.label_height = 700
+        self.background_color = (255, 255, 255)  # 흰색
+        self.text_color = (0, 0, 0)  # 검은색
+        self.accent_color = (0, 100, 200)  # 파란색
+        self.warning_color = (255, 0, 0)  # 빨간색
+        self.allergy_color = (255, 140, 0)  # 주황색 (알레르기 강조)
+        
+        # 폰트 설정 (다국어 지원 폰트 우선 사용)
+        try:
+            # 다국어 지원 폰트 우선 시도 (중국어, 영어, 한글 모두 지원)
+            multilingual_fonts = [
+                "C:/Windows/Fonts/msyh.ttc",      # Microsoft YaHei (중국어, 영어, 한글)
+                "C:/Windows/Fonts/simsun.ttc",    # SimSun (중국어, 영어)
+                "C:/Windows/Fonts/simhei.ttf",    # SimHei (중국어, 영어)
+                "C:/Windows/Fonts/arial.ttf",     # Arial (영어, 기본)
+                "C:/Windows/Fonts/calibri.ttf",   # Calibri (영어, 기본)
+                "C:/Windows/Fonts/tahoma.ttf",    # Tahoma (영어, 기본)
+                "msyh.ttc",                       # Microsoft YaHei
+                "simsun.ttc",                     # SimSun
+                "simhei.ttf",                     # SimHei
+                "arial.ttf",                      # Arial
+                "calibri.ttf",                    # Calibri
+                "tahoma.ttf",                     # Tahoma
+                "malgun.ttf",                     # 맑은 고딕 (한글)
+                "gulim.ttc",                      # 굴림 (한글)
+            ]
+            
+            font_found = False
+            for font_path in multilingual_fonts:
+                try:
+                    self.title_font = ImageFont.truetype(font_path, 28)
+                    self.header_font = ImageFont.truetype(font_path, 20)
+                    self.body_font = ImageFont.truetype(font_path, 16)
+                    self.small_font = ImageFont.truetype(font_path, 14)
+                    self.allergy_font = ImageFont.truetype(font_path, 16)  # 알레르기 강조용
+                    print(f"✅ 다국어 폰트 로드 성공: {font_path}")
+                    font_found = True
+                    break
+                except:
+                    continue
+            
+            if not font_found:
+                # 폰트를 찾을 수 없는 경우 기본 폰트 사용
+                self.title_font = ImageFont.load_default()
+                self.header_font = ImageFont.load_default()
+                self.body_font = ImageFont.load_default()
+                self.small_font = ImageFont.load_default()
+                self.allergy_font = ImageFont.load_default()
+                print("⚠️ 다국어 폰트를 찾을 수 없어 기본 폰트를 사용합니다.")
+                
+        except Exception as e:
+            # 폰트를 찾을 수 없는 경우 기본 폰트 사용
+            self.title_font = ImageFont.load_default()
+            self.header_font = ImageFont.load_default()
+            self.body_font = ImageFont.load_default()
+            self.small_font = ImageFont.load_default()
+            self.allergy_font = ImageFont.load_default()
+            print(f"⚠️ 폰트 로드 실패: {e}")
+        
+        # 2027년 중국 알레르기 성분 (8대)
+        self.china_allergens = [
+            "글루텐 함유 곡물", "갑각류", "생선", "달걀", 
+            "땅콩", "대두", "젖", "견과류"
+        ]
+        
+        # 2025년 미국 알레르기 성분 (9대)
+        self.us_allergens = [
+            "우유", "달걀", "생선", "갑각류", "견과류", 
+            "밀", "땅콩", "콩", "참깨"
+        ]
+    
+    def generate_china_2027_label(self, product_info: Dict) -> Image.Image:
+        """2027년 중국 GB 7718-2025 규정 라벨 생성"""
+        
+        # 이미지 생성
+        image = Image.new('RGB', (self.label_width, self.label_height), self.background_color)
+        draw = ImageDraw.Draw(image)
+        
+        y_position = 20
+        
+        # 1. 제품명 (중국어 필수)
+        product_name = product_info.get("product_name_chinese", "拉面")
+        draw.text((20, y_position), product_name, fill=self.accent_color, font=self.title_font)
+        y_position += 40
+        
+        # 2. 원산지 (중국어 필수)
+        origin = "原产国：韩国"  # 중국어로 원산지 표기
+        draw.text((20, y_position), origin, fill=self.text_color, font=self.body_font)
+        y_position += 30
+        
+        # 3. 제조사 정보
+        manufacturer = product_info.get("manufacturer_chinese", "韩国食品公司")
+        draw.text((20, y_position), f"制造商：{manufacturer}", fill=self.text_color, font=self.body_font)
+        y_position += 30
+        
+        # 4. 유통기한 (2027년 규정: 도달일 형식)
+        expiry_date = product_info.get("expiry_date", "2026-12-31")
+        expiry_chinese = f"到期日：{expiry_date}"  # 도달일 형식
+        draw.text((20, y_position), expiry_chinese, fill=self.text_color, font=self.body_font)
+        y_position += 40
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=2)
+        y_position += 20
+        
+        # 5. 영양성분표 (1+6 체계)
+        y_position = self._draw_china_nutrition_table(draw, product_info, y_position)
+        
+        # 6. 성분표 (알레르기 성분 강조)
+        y_position = self._draw_china_ingredients(draw, product_info, y_position)
+        
+        # 7. 알레르기 정보 (8대 알레르기)
+        y_position = self._draw_china_allergy_info(draw, product_info, y_position)
+        
+        # 8. 경고 문구 (2027년 의무)
+        y_position = self._draw_china_warning(draw, y_position)
+        
+        # 9. 디지털 라벨 QR코드
+        y_position = self._draw_digital_label_qr(draw, product_info, y_position)
+        
+        # 10. 보관 방법
+        y_position = self._draw_storage_info(draw, product_info, y_position)
+        
+        # 11. 제조사 상세 정보
+        self._draw_manufacturer_details(draw, product_info, y_position)
+        
+        return image
+    
+    def generate_us_2025_label(self, product_info: Dict) -> Image.Image:
+        """2025년 미국 FDA 새로운 라벨링 규정 라벨 생성"""
+        
+        # 이미지 생성
+        image = Image.new('RGB', (self.label_width, self.label_height), self.background_color)
+        draw = ImageDraw.Draw(image)
+        
+        y_position = 20
+        
+        # 1. 제품명 (영어 필수)
+        product_name = product_info.get("product_name_english", "Korean Ramen")
+        draw.text((20, y_position), product_name, fill=self.accent_color, font=self.title_font)
+        y_position += 40
+        
+        # 2. 원산지 (영어 필수)
+        origin = "Country of Origin: Republic of Korea"
+        draw.text((20, y_position), origin, fill=self.text_color, font=self.body_font)
+        y_position += 30
+        
+        # 3. 제조사 정보
+        manufacturer = product_info.get("manufacturer_english", "Korean Food Co., Ltd.")
+        draw.text((20, y_position), f"Manufacturer: {manufacturer}", fill=self.text_color, font=self.body_font)
+        y_position += 30
+        
+        # 4. 유통기한
+        expiry_date = product_info.get("expiry_date", "2026-12-31")
+        draw.text((20, y_position), f"Best Before: {expiry_date}", fill=self.text_color, font=self.body_font)
+        y_position += 40
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=2)
+        y_position += 20
+        
+        # 5. 영양성분표 (2025년 FDA 규정)
+        y_position = self._draw_us_nutrition_table(draw, product_info, y_position)
+        
+        # 6. 성분표 (알레르기 성분 강조)
+        y_position = self._draw_us_ingredients(draw, product_info, y_position)
+        
+        # 7. 알레르기 정보 (9대 알레르기)
+        y_position = self._draw_us_allergy_info(draw, product_info, y_position)
+        
+        # 8. FOP 라벨 (2025년 제안)
+        y_position = self._draw_fop_label(draw, product_info, y_position)
+        
+        # 9. 보관 방법
+        y_position = self._draw_storage_info_english(draw, product_info, y_position)
+        
+        # 10. 제조사 상세 정보
+        self._draw_manufacturer_details_english(draw, product_info, y_position)
+        
+        return image
+    
+    def _draw_china_nutrition_table(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """중국 1+6 영양성분표 그리기"""
+        
+        # 제목
+        draw.text((20, y_position), "营养成分表 (每100g)", fill=self.accent_color, font=self.header_font)
+        y_position += 30
+        
+        # 표 헤더
+        draw.text((20, y_position), "项目", fill=self.text_color, font=self.body_font)
+        draw.text((200, y_position), "含量", fill=self.text_color, font=self.body_font)
+        draw.text((300, y_position), "营养素参考值%", fill=self.text_color, font=self.body_font)
+        y_position += 25
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.text_color, width=1)
+        y_position += 10
+        
+        # 1+6 필수 영양성분
+        nutrition_data = product_info.get("nutrition", {})
+        china_nutrition = {
+            "能量": nutrition_data.get("열량", "400 kcal"),
+            "蛋白质": nutrition_data.get("단백질", "12g"),
+            "脂肪": nutrition_data.get("지방", "15g"),
+            "饱和脂肪": nutrition_data.get("포화지방", "5g"),
+            "碳水化合物": nutrition_data.get("탄수화물", "60g"),
+            "糖": nutrition_data.get("당류", "5g"),
+            "钠": nutrition_data.get("나트륨", "800mg")
+        }
+        
+        for nutrient, value in china_nutrition.items():
+            draw.text((20, y_position), nutrient, fill=self.text_color, font=self.body_font)
+            draw.text((200, y_position), value, fill=self.text_color, font=self.body_font)
+            
+            # NRV% 계산 (예시)
+            if "kcal" in value:
+                nrv = "20%"
+            elif "g" in value:
+                nrv = "15%"
+            elif "mg" in value:
+                nrv = "35%"
+            else:
+                nrv = "10%"
+            
+            draw.text((300, y_position), nrv, fill=self.text_color, font=self.body_font)
+            y_position += 20
+        
+        y_position += 20
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=1)
+        y_position += 15
+        
+        return y_position
+    
+    def _draw_us_nutrition_table(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """미국 2025년 FDA 영양성분표 그리기"""
+        
+        # 제목
+        draw.text((20, y_position), "Nutrition Facts", fill=self.accent_color, font=self.header_font)
+        y_position += 30
+        
+        # 1회 제공량
+        serving_size = "1 package (85g)"
+        draw.text((20, y_position), f"Serving Size: {serving_size}", fill=self.text_color, font=self.body_font)
+        y_position += 25
+        
+        # 칼로리 (강조)
+        calories = product_info.get("nutrition", {}).get("열량", "400 kcal").split()[0]
+        draw.text((20, y_position), f"Calories: {calories}", fill=self.text_color, font=self.header_font)
+        y_position += 30
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.text_color, width=2)
+        y_position += 10
+        
+        # 영양성분 (13개 필수)
+        nutrition_data = product_info.get("nutrition", {})
+        us_nutrition = [
+            ("Total Fat", nutrition_data.get("지방", "15g"), "25%"),
+            ("Saturated Fat", nutrition_data.get("포화지방", "5g"), "25%"),
+            ("Trans Fat", "0g", "0%"),
+            ("Cholesterol", "0mg", "0%"),
+            ("Sodium", nutrition_data.get("나트륨", "800mg"), "35%"),
+            ("Total Carbohydrate", nutrition_data.get("탄수화물", "60g"), "20%"),
+            ("Dietary Fiber", "2g", "8%"),
+            ("Total Sugars", nutrition_data.get("당류", "5g"), ""),
+            ("Added Sugars", "0g", "0%"),
+            ("Protein", nutrition_data.get("단백질", "12g"), ""),
+            ("Vitamin D", "0mcg", "0%"),
+            ("Calcium", "20mg", "2%"),
+            ("Iron", "2mg", "10%"),
+            ("Potassium", "200mg", "4%")
+        ]
+        
+        for nutrient, value, dv in us_nutrition:
+            draw.text((20, y_position), nutrient, fill=self.text_color, font=self.body_font)
+            draw.text((200, y_position), value, fill=self.text_color, font=self.body_font)
+            if dv:
+                draw.text((300, y_position), f"{dv} DV", fill=self.text_color, font=self.body_font)
+            y_position += 18
+        
+        y_position += 20
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=1)
+        y_position += 15
+        
+        return y_position
+    
+    def _draw_china_ingredients(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """중국 성분표 (알레르기 성분 강조)"""
+        
+        # 제목
+        draw.text((20, y_position), "配料表", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # 성분 목록
+        ingredients = product_info.get("ingredients", [
+            "面条(小麦粉, 盐)", "调味粉", "脱水蔬菜", "调味料", "香料"
+        ])
+        
+        for ingredient in ingredients:
+            # 알레르기 성분 강조 표시
+            is_allergy = any(allergen in ingredient for allergen in self.china_allergens)
+            color = self.allergy_color if is_allergy else self.text_color
+            font = self.allergy_font if is_allergy else self.body_font
+            
+            prefix = "• " if not is_allergy else "⚠ "
+            draw.text((20, y_position), f"{prefix}{ingredient}", fill=color, font=font)
+            y_position += 18
+        
+        y_position += 10
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=1)
+        y_position += 15
+        
+        return y_position
+    
+    def _draw_us_ingredients(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """미국 성분표 (알레르기 성분 강조)"""
+        
+        # 제목
+        draw.text((20, y_position), "Ingredients", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # 성분 목록
+        ingredients = product_info.get("ingredients_english", [
+            "Noodles (Wheat Flour, Salt)", "Seasoning Powder", "Dehydrated Vegetables", 
+            "Seasoning", "Spices"
+        ])
+        
+        for ingredient in ingredients:
+            # 알레르기 성분 강조 표시
+            is_allergy = any(allergen.lower() in ingredient.lower() for allergen in self.us_allergens)
+            color = self.allergy_color if is_allergy else self.text_color
+            font = self.allergy_font if is_allergy else self.body_font
+            
+            prefix = "• " if not is_allergy else "⚠ "
+            draw.text((20, y_position), f"{prefix}{ingredient}", fill=color, font=font)
+            y_position += 18
+        
+        y_position += 10
+        
+        # 구분선
+        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=1)
+        y_position += 15
+        
+        return y_position
+    
+    def _draw_china_allergy_info(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """중국 알레르기 정보 (8대 알레르기)"""
+        
+        # 제목
+        draw.text((20, y_position), "过敏原信息", fill=self.warning_color, font=self.header_font)
+        y_position += 25
+        
+        # 알레르기 성분
+        allergy_ingredients = product_info.get("allergy_ingredients", ["小麦", "大豆"])
+        
+        if allergy_ingredients:
+            draw.text((20, y_position), "含有: " + ", ".join(allergy_ingredients), 
+                     fill=self.warning_color, font=self.body_font)
+        else:
+            draw.text((20, y_position), "含有: 无", fill=self.text_color, font=self.body_font)
+        
+        y_position += 25
+        
+        # 주의사항
+        draw.text((20, y_position), "※ 本产品含有过敏原成分，请过敏体质者注意。", 
+                 fill=self.warning_color, font=self.small_font)
+        y_position += 20
+        
+        return y_position
+    
+    def _draw_us_allergy_info(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """미국 알레르기 정보 (9대 알레르기)"""
+        
+        # 제목
+        draw.text((20, y_position), "Allergen Information", fill=self.warning_color, font=self.header_font)
+        y_position += 25
+        
+        # 알레르기 성분
+        allergy_ingredients = product_info.get("allergy_ingredients_english", ["Wheat", "Soy"])
+        
+        if allergy_ingredients:
+            draw.text((20, y_position), "Contains: " + ", ".join(allergy_ingredients), 
+                     fill=self.warning_color, font=self.body_font)
+        else:
+            draw.text((20, y_position), "Contains: None", fill=self.text_color, font=self.body_font)
+        
+        y_position += 25
+        
+        # 주의사항
+        draw.text((20, y_position), "※ This product contains allergens. Please check ingredients if you have allergies.", 
+                 fill=self.warning_color, font=self.small_font)
+        y_position += 20
+        
+        return y_position
+    
+    def _draw_china_warning(self, draw: ImageDraw.Draw, y_position: int) -> int:
+        """중국 2027년 의무 경고 문구"""
+        
+        # 경고 문구
+        warning_text = "儿童及青少年应避免过量摄入钠、脂肪、糖"
+        draw.text((20, y_position), warning_text, fill=self.warning_color, font=self.body_font)
+        y_position += 25
+        
+        return y_position
+    
+    def _draw_digital_label_qr(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """중국 디지털 라벨 QR코드"""
+        
+        # 디지털 라벨 문구
+        draw.text((20, y_position), "数字标签", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # QR코드 생성
+        qr_data = {
+            "product_name": product_info.get("product_name_chinese", "拉面"),
+            "manufacturer": product_info.get("manufacturer_chinese", "韩国食品公司"),
+            "nutrition": product_info.get("nutrition", {}),
+            "ingredients": product_info.get("ingredients", []),
+            "allergy_info": product_info.get("allergy_ingredients", []),
+            "digital_label": True
+        }
+        
+        # QR코드 이미지 생성
+        qr = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr.add_data(json.dumps(qr_data, ensure_ascii=False))
+        qr.make(fit=True)
+        
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_img = qr_img.resize((80, 80))
+        
+        # QR코드를 메인 이미지에 붙이기
+        image = draw._image
+        image.paste(qr_img, (20, y_position))
+        
+        y_position += 90
+        
+        return y_position
+    
+    def _draw_fop_label(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """미국 FOP 라벨 (2025년 제안)"""
+        
+        # FOP 라벨 제목
+        draw.text((20, y_position), "Front of Package Label", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # FOP 정보 박스
+        nutrition_data = product_info.get("nutrition", {})
+        
+        # 포화지방 평가
+        sat_fat = float(nutrition_data.get("포화지방", "5g").replace("g", ""))
+        sat_fat_level = "High" if sat_fat > 5 else "Med" if sat_fat > 2 else "Low"
+        
+        # 나트륨 평가
+        sodium = float(nutrition_data.get("나트륨", "800mg").replace("mg", ""))
+        sodium_level = "High" if sodium > 600 else "Med" if sodium > 300 else "Low"
+        
+        # 첨가당 평가
+        added_sugar = float(nutrition_data.get("당류", "5g").replace("g", ""))
+        sugar_level = "High" if added_sugar > 10 else "Med" if added_sugar > 5 else "Low"
+        
+        # FOP 표시
+        fop_items = [
+            f"Saturated Fat: {sat_fat_level}",
+            f"Sodium: {sodium_level}",
+            f"Added Sugars: {sugar_level}"
+        ]
+        
+        for item in fop_items:
+            draw.text((20, y_position), item, fill=self.text_color, font=self.body_font)
+            y_position += 20
+        
+        y_position += 10
+        
+        return y_position
+    
+    def _draw_storage_info(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """보관 방법 (중국어)"""
+        
+        # 제목
+        draw.text((20, y_position), "储存方法", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # 보관 방법
+        storage_method = product_info.get("storage_method_chinese", "常温保存，避免阳光直射")
+        draw.text((20, y_position), storage_method, fill=self.text_color, font=self.body_font)
+        y_position += 25
+        
+        return y_position
+    
+    def _draw_storage_info_english(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """보관 방법 (영어)"""
+        
+        # 제목
+        draw.text((20, y_position), "Storage Instructions", fill=self.accent_color, font=self.header_font)
+        y_position += 25
+        
+        # 보관 방법
+        storage_method = product_info.get("storage_method_english", "Store at room temperature, avoid direct sunlight")
+        draw.text((20, y_position), storage_method, fill=self.text_color, font=self.body_font)
+        y_position += 25
+        
+        return y_position
+    
+    def _draw_manufacturer_details(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """제조사 상세 정보 (중국어)"""
+        
+        # 제조사 정보
+        address = product_info.get("address_chinese", "韩国首尔江南区")
+        phone = product_info.get("phone", "02-1234-5678")
+        
+        draw.text((20, y_position), f"地址: {address}", fill=self.text_color, font=self.small_font)
+        y_position += 15
+        draw.text((20, y_position), f"电话: {phone}", fill=self.text_color, font=self.small_font)
+        y_position += 15
+        
+        return y_position
+    
+    def _draw_manufacturer_details_english(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
+        """제조사 상세 정보 (영어)"""
+        
+        # 제조사 정보
+        address = product_info.get("address_english", "Seoul, South Korea")
+        phone = product_info.get("phone", "02-1234-5678")
+        
+        draw.text((20, y_position), f"Address: {address}", fill=self.text_color, font=self.small_font)
+        y_position += 15
+        draw.text((20, y_position), f"Phone: {phone}", fill=self.text_color, font=self.small_font)
+        y_position += 15
+        
+        return y_position
+    
+    def save_label(self, image: Image.Image, filename: str, output_dir: str = "advanced_labels"):
+        """라벨 이미지 저장"""
+        os.makedirs(output_dir, exist_ok=True)
+        filepath = os.path.join(output_dir, filename)
+        image.save(filepath, "PNG")
+        return filepath
+
+def main():
+    """고도화된 라벨 생성 테스트"""
+    
+    # 제품 정보 설정 (2027년 중국, 2025년 미국 규정 반영)
+    product_info = {
+        # 기본 정보
+        "product_name": "한국 라면",
+        "product_name_chinese": "韩国拉面",
+        "product_name_english": "Korean Ramen",
+        "manufacturer": "한국식품(주)",
+        "manufacturer_chinese": "韩国食品有限公司",
+        "manufacturer_english": "Korean Food Co., Ltd.",
+        "origin": "대한민국",
+        "expiry_date": "2026-12-31",
+        
+        # 영양성분 (1+6 체계)
+        "nutrition": {
+            "열량": "400 kcal",
+            "단백질": "12g",
+            "지방": "15g",
+            "포화지방": "5g",
+            "탄수화물": "60g",
+            "당류": "5g",
+            "나트륨": "800mg"
+        },
+        
+        # 성분 정보
+        "ingredients": [
+            "面条(小麦粉, 盐)",
+            "调味粉",
+            "脱水蔬菜",
+            "调味料",
+            "香料"
+        ],
+        "ingredients_english": [
+            "Noodles (Wheat Flour, Salt)",
+            "Seasoning Powder",
+            "Dehydrated Vegetables",
+            "Seasoning",
+            "Spices"
+        ],
+        
+        # 알레르기 정보 (8대/9대)
+        "allergy_ingredients": ["小麦", "大豆"],
+        "allergy_ingredients_english": ["Wheat", "Soy"],
+        
+        # 보관 방법
+        "storage_method_chinese": "常温保存，避免阳光直射",
+        "storage_method_english": "Store at room temperature, avoid direct sunlight",
+        
+        # 제조사 정보
+        "address_chinese": "韩国首尔江南区",
+        "address_english": "Seoul, South Korea",
+        "phone": "02-1234-5678"
+    }
+    
+    print("🏷️ 고도화된 영양정보 라벨 생성 시스템")
+    print("=" * 60)
+    print("📋 2027년 중국 GB 7718-2025 규정 반영")
+    print("📋 2025년 미국 FDA 새로운 라벨링 규정 반영")
+    print("=" * 60)
+    
+    generator = AdvancedLabelGenerator()
+    
+    # 중국 2027년 라벨 생성
+    print("\n🔧 중국 2027년 라벨 생성 중...")
+    china_label = generator.generate_china_2027_label(product_info)
+    china_filename = f"china_2027_label_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    china_path = generator.save_label(china_label, china_filename)
+    print(f"✅ 중국 2027년 라벨 생성 완료: {china_path}")
+    
+    # 미국 2025년 라벨 생성
+    print("\n🔧 미국 2025년 라벨 생성 중...")
+    us_label = generator.generate_us_2025_label(product_info)
+    us_filename = f"us_2025_label_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    us_path = generator.save_label(us_label, us_filename)
+    print(f"✅ 미국 2025년 라벨 생성 완료: {us_path}")
+    
+    print(f"\n✅ 총 2개 라벨이 생성되었습니다:")
+    print(f"   📁 {china_path}")
+    print(f"   📁 {us_path}")
+    
+    print(f"\n🎯 주요 특징:")
+    print(f"   🇨🇳 중국: 1+6 영양성분, 8대 알레르기, QR코드 디지털 라벨")
+    print(f"   🇺🇸 미국: 13개 영양성분, 9대 알레르기, FOP 라벨")
+
+if __name__ == "__main__":
+    main() 

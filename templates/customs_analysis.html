@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통관 거부사례 분석 - 나만의 통관 수출 도우미</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            padding: 2rem;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
+        }
+        
+        .search-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .search-input {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .btn-search {
+            background: var(--secondary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-search:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--secondary-color);
+        }
+        
+        .similarity-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .similarity-high {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .similarity-medium {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .similarity-low {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .example-queries {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .example-query {
+            display: inline-block;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .example-query:hover {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-asia me-2"></i>
+                나만의 통관 수출 도우미
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/customs-analysis">통관 분석</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/regulation-info">규제 정보</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="text-center mb-4">
+                        <i class="fas fa-search me-3"></i>
+                        통관 거부사례 분석
+                    </h1>
+                    <p class="text-center text-muted mb-4">
+                        AI가 과거 통관 거부사례를 분석하여 유사한 사례를 찾아드립니다
+                    </p>
+                </div>
+            </div>
+
+            <!-- 검색 섹션 -->
+            <div class="search-section">
+                <div class="row">
+                    <div class="col-md-8 mx-auto">
+                        <form id="searchForm">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control search-input" id="searchQuery" 
+                                       placeholder="예: 중국으로 라면 수출하고 싶어요" required>
+                                <button class="btn btn-search" type="submit">
+                                    <i class="fas fa-search me-2"></i>
+                                    분석하기
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- 예시 검색어 -->
+                        <div class="example-queries">
+                            <small class="text-muted">💡 예시 검색어:</small><br>
+                            <span class="example-query" onclick="setQuery('중국으로 라면 수출하고 싶어요')">중국으로 라면 수출하고 싶어요</span>
+                            <span class="example-query" onclick="setQuery('미국 라면 통관 거부 사례')">미국 라면 통관 거부 사례</span>
+                            <span class="example-query" onclick="setQuery('라면 성분표 문제')">라면 성분표 문제</span>
+                            <span class="example-query" onclick="setQuery('영양성분표 누락')">영양성분표 누락</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 정보 섹션 -->
+            <div class="info-section">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-globe-asia fa-2x text-primary mb-2"></i>
+                        <h5>지원 국가</h5>
+                        <p class="text-muted">중국, 미국</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                        <h5>분석 데이터</h5>
+                        <p class="text-muted">5,800+ 통관 사례</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-brain fa-2x text-primary mb-2"></i>
+                        <h5>AI 분석</h5>
+                        <p class="text-muted">실시간 유사도 계산</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 결과 섹션 -->
+            <div id="resultsSection" style="display: none;">
+                <h3 class="mb-3">
+                    <i class="fas fa-list-alt me-2"></i>
+                    분석 결과
+                </h3>
+                <div id="resultsContainer"></div>
+            </div>
+
+            <!-- 로딩 섹션 -->
+            <div id="loadingSection" class="loading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">AI가 통관 사례를 분석하고 있습니다...</p>
+            </div>
+
+            <!-- 에러 섹션 -->
+            <div id="errorSection" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setQuery(query) {
+            document.getElementById('searchQuery').value = query;
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('searchQuery').value.trim();
+            if (!query) {
+                alert('검색어를 입력해주세요.');
+                return;
+            }
+            
+            // UI 상태 변경
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            
+            // API 호출
+            fetch('/api/customs-analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorSection').style.display = 'block';
+                } else {
+                    displayResults(data.results);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('errorMessage').textContent = '서버 오류가 발생했습니다.';
+                document.getElementById('errorSection').style.display = 'block';
+            });
+        });
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                
+                let similarityClass = 'similarity-low';
+                if (result.grade === '높음') {
+                    similarityClass = 'similarity-high';
+                } else if (result.grade === '보통') {
+                    similarityClass = 'similarity-medium';
+                }
+                
+                resultCard.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-2">
+                            <span class="badge ${similarityClass} similarity-badge">
+                                ${result.grade_icon} 유사도 ${result.similarity}
+                            </span>
+                        </div>
+                        <div class="col-md-10">
+                            <h5 class="mb-2">
+                                <i class="fas fa-flag me-2"></i>
+                                ${result.country} - ${result.item}
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>거부 사유:</strong>
+                                    <p class="text-danger mb-2">${result.reason}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>조치 사항:</strong>
+                                    <p class="text-success mb-2">${result.action}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(resultCard);
+            });
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 통관 수출 도우미</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .hero-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            padding: 3rem;
+        }
+        
+        .hero-title {
+            color: var(--primary-color);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-subtitle {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+        
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .stats-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-asia me-2"></i>
+                나만의 통관 수출 도우미
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/customs-analysis">통관 분석</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/regulation-info">규제 정보</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 히어로 섹션 -->
+        <div class="hero-section text-center">
+            <h1 class="hero-title">
+                <i class="fas fa-shipping-fast me-3"></i>
+                나만의 통관 수출 도우미
+            </h1>
+            <p class="hero-subtitle">
+                중국, 미국 라면 수출을 위한 AI 기반 통관 거부사례 분석 및 규제 준수 지원 시스템
+            </p>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="stat-item">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">지원 국가</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-item">
+                        <div class="stat-number">5,800+</div>
+                        <div class="stat-label">통관 사례</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-item">
+                        <div class="stat-number">AI</div>
+                        <div class="stat-label">실시간 분석</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주요 기능 섹션 -->
+        <div class="row">
+            <div class="col-lg-6 col-md-6">
+                <a href="/customs-analysis" class="feature-card">
+                    <div class="text-center">
+                        <i class="fas fa-search feature-icon"></i>
+                        <h3 class="feature-title">통관 거부사례 분석</h3>
+                        <p class="feature-description">
+                            AI가 과거 통관 거부사례를 분석하여 유사한 사례를 찾아드립니다. 
+                            거부 사유와 해결 방안을 제시합니다.
+                        </p>
+                    </div>
+                </a>
+            </div>
+            
+            <div class="col-lg-6 col-md-6">
+                <a href="/regulation-info" class="feature-card">
+                    <div class="text-center">
+                        <i class="fas fa-book-open feature-icon"></i>
+                        <h3 class="feature-title">규제정보 조회</h3>
+                        <p class="feature-description">
+                            중국과 미국의 최신 라면 수출 규제 정보를 제공합니다. 
+                            실시간으로 업데이트되는 규제 내용을 확인하세요.
+                        </p>
+                    </div>
+                </a>
+            </div>
+            
+            <div class="col-lg-6 col-md-6">
+                <a href="/compliance-analysis" class="feature-card">
+                    <div class="text-center">
+                        <i class="fas fa-check-circle feature-icon"></i>
+                        <h3 class="feature-title">규제 준수성 분석</h3>
+                        <p class="feature-description">
+                            귀사의 제품 정보와 준비 서류를 규제 정보와 비교 분석합니다. 
+                            부족한 부분과 개선 방안을 구체적으로 제시합니다.
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 추가 기능 섹션 -->
+        <div class="row mt-4">
+            <div class="col-lg-6 col-md-6">
+                <a href="/document-generation" class="feature-card">
+                    <div class="text-center">
+                        <i class="fas fa-file-alt feature-icon"></i>
+                        <h3 class="feature-title">자동 서류 생성</h3>
+                        <p class="feature-description">
+                            수출에 필요한 각종 서류를 자동으로 생성합니다. 
+                            상업송장, 포장명세서, 원산지증명서 등을 제공합니다.
+                        </p>
+                    </div>
+                </a>
+            </div>
+            
+            <div class="col-lg-6 col-md-6">
+                <a href="/nutrition-label" class="feature-card">
+                    <div class="text-center">
+                        <i class="fas fa-tag feature-icon"></i>
+                        <h3 class="feature-title">영양정보 라벨 생성</h3>
+                        <p class="feature-description">
+                            국가별 규제에 맞는 영양정보 라벨을 자동 생성합니다. 
+                            중국 GB 7718-2025, 미국 FDA 규정을 준수합니다.
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 시작하기 버튼 -->
+        <div class="text-center mt-5 mb-5">
+            <a href="/customs-analysis" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket me-2"></i>
+                지금 시작하기
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
