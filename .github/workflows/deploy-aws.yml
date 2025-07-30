@@ -2,8 +2,9 @@ name: Deploy to AWS Elastic Beanstalk
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
 
 env:
   AWS_REGION: ap-northeast-2
@@ -28,14 +29,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Create deployment package
-      run: |
-        # 필요한 디렉토리 생성
-        mkdir -p advanced_labels generated_documents uploaded_labels uploaded_templates temp_uploads regulation_cache static
-        
-        # 배포용 ZIP 파일 생성
-        zip -r deployment.zip . -x "*.git*" "*.pyc" "__pycache__/*" "*.DS_Store" "node_modules/*" ".env*"
-        
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -43,38 +36,32 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
-    - name: Deploy to Elastic Beanstalk
+    - name: Install EB CLI
       run: |
-        # EB CLI 설치
         pip install awsebcli
         
-        # EB 초기화 (이미 설정되어 있다면 건너뜀)
-        eb init ${{ env.EB_APPLICATION_NAME }} --region ${{ env.AWS_REGION }} --platform "Python 3.11" || true
-        
-        # 환경이 존재하는지 확인하고 배포
-        if eb status ${{ env.EB_ENVIRONMENT_NAME }} --region ${{ env.AWS_REGION }}; then
-          # 기존 환경에 배포
-          eb deploy ${{ env.EB_ENVIRONMENT_NAME }} --region ${{ env.AWS_REGION }}
-        else
-          # 새 환경 생성
-          eb create ${{ env.EB_ENVIRONMENT_NAME }} --region ${{ env.AWS_REGION }} --instance-type t3.small --elb-type application
+    - name: Deploy to Elastic Beanstalk
+      run: |
+        # EB 초기화 (이미 존재하는 경우 스킵)
+        if [ ! -f .elasticbeanstalk/config.yml ]; then
+          eb init ${{ env.EB_APPLICATION_NAME }} --region ${{ env.AWS_REGION }} --platform "Python 3.11"
         fi
+        
+        # 환경이 존재하지 않으면 생성
+        if ! eb status ${{ env.EB_ENVIRONMENT_NAME }}; then
+          eb create ${{ env.EB_ENVIRONMENT_NAME }} --elb-type application --instance-type t3.small
+        fi
+        
+        # 배포
+        eb deploy ${{ env.EB_ENVIRONMENT_NAME }} --timeout 20
         
     - name: Get deployment URL
       run: |
-        pip install awsebcli
-        DEPLOYMENT_URL=$(eb status ${{ env.EB_ENVIRONMENT_NAME }} --region ${{ env.AWS_REGION }} --output json | jq -r '.CNAME')
-        echo "Deployment URL: http://$DEPLOYMENT_URL"
-        echo "DEPLOYMENT_URL=http://$DEPLOYMENT_URL" >> $GITHUB_ENV
+        DEPLOYMENT_URL=$(eb status ${{ env.EB_ENVIRONMENT_NAME }} --output json | jq -r '.Environment.CNAME')
+        echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+        echo "🚀 배포 완료! URL: http://$DEPLOYMENT_URL"
         
-    - name: Notify deployment success
-      if: success()
+    - name: Health check
       run: |
-        echo "✅ 배포 성공!"
-        echo "🌐 배포 URL: ${{ env.DEPLOYMENT_URL }}"
-        
-    - name: Notify deployment failure
-      if: failure()
-      run: |
-        echo "❌ 배포 실패!"
-        echo "로그를 확인해주세요." 
+        sleep 30
+        curl -f http://${{ env.DEPLOYMENT_URL }} || exit 1 

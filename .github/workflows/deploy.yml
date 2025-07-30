@@ -2,53 +2,34 @@ name: Deploy to AWS Elastic Beanstalk
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
-    - name: Run tests (if any)
-      run: |
-        echo "Running basic checks..."
-        python -c "import app; print('App import successful')"
-        
+    - uses: actions/checkout@v3
+    
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-northeast-2
-        
-    - name: Install EB CLI
+    
+    - name: Generate deployment package
       run: |
-        pip install awsebcli
-        
+        git archive --format=zip --output=deployment.zip HEAD
+    
     - name: Deploy to EB
-      run: |
-        eb deploy kati-production --region ap-northeast-2
-      env:
-        EB_APP_NAME: kati-export-helper
-        EB_ENV_NAME: kati-production
-        
-    - name: Health check
-      run: |
-        echo "Deployment completed. Checking health..."
-        sleep 30
-        curl -f ${{ secrets.EB_URL }} || echo "Health check failed" 
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: Easytrax
+        environment_name: Easytrax-env
+        version_label: "v${{ github.run_number }}"
+        region: ap-northeast-2
+        deployment_package: deployment.zip
+        wait_for_deployment: true 

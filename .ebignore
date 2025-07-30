@@ -2,68 +2,58 @@
 .git/
 .gitignore
 
-# Python 관련
+# Python 캐시
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
 
-# IDE 관련
+# 가상환경
+venv/
+env/
+ENV/
+
+# IDE 설정
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-
-# OS 관련
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # 로그 파일
 *.log
 logs/
 
 # 임시 파일
-temp/
-tmp/
 *.tmp
+*.temp
+temp_uploads/
+regulation_cache/
 
-# 환경 변수
+# 개발용 파일
 .env
 .env.local
-.env.production
+.env.development
 
-# 데이터 파일 (큰 파일들)
-data/*.xlsx
-data/*.csv
-*.xlsx
-*.csv
+# 테스트 파일
+test_*.py
+*_test.py
 
-# 모델 파일 (큰 파일들)
-model/*.pkl
-*.pkl
-
-# 백업 파일
-*.bak
-*.backup
-
-# 문서
+# 문서 및 가이드
 *.md
 !README.md
 
-# 테스트 파일
-test/
-tests/
-*_test.py
-test_*.py 
+# 압축 파일
+*.zip
+*.tar.gz
+
+# 백업 파일
+*.backup
+backup/
+
+# 데이터 파일 (필요시 포함)
+# data/
+# regulation_data/
+
+# 정적 파일 (필요시 포함)
+# static/ 
