@@ -1,124 +1,182 @@
-# 🚀 KATI2 배포 가이드
+# 🚀 KATI 통관 수출 도우미 배포 가이드
 
-## 📋 배포 전 확인사항
+## 📋 배포 개요
+- **플랫폼**: Render.com
+- **프레임워크**: Flask (Python 3.11.7)
+- **웹서버**: Gunicorn
+- **데이터베이스**: PostgreSQL (Render 제공)
 
-### ✅ 현재 구현된 기능들
-- **웹 인터페이스**: 모든 HTML 페이지 및 API 엔드포인트
-- **실시간 규제 크롤링**: 외부 API 연동으로 실시간 데이터 수집
-- **AI 기반 분석**: Google Cloud Vision, Azure Computer Vision, OpenAI 연동
-- **파일 업로드/다운로드**: 클라우드 스토리지 시스템
-- **문서 생성**: PDF, Excel, Word 문서 생성
-- **OCR 처리**: 이미지에서 텍스트 추출 및 분석
-- **영양 라벨 생성**: AI 기반 영양 정보 분석
+## 🔧 배포 전 준비사항
 
-### 🔧 클라우드 최적화 완료
-- **파일 시스템**: 임시 파일 시스템으로 대체
-- **AI 모델**: 외부 API로 대체 (로컬 모델과 동일한 기능)
-- **캐싱**: 메모리 기반 캐싱 시스템
-- **실시간 크롤링**: 외부 API 연동
+### 1. 필수 파일 확인
+```
+✅ app.py - 메인 Flask 애플리케이션
+✅ requirements.txt - Python 의존성
+✅ render.yaml - Render 배포 설정
+✅ Procfile - 프로세스 정의
+✅ runtime.txt - Python 버전
+✅ build.sh - 빌드 스크립트
+```
 
-## 🌐 배포 플랫폼 선택
+### 2. 디렉토리 구조 확인
+```
+✅ model/ - 학습된 모델 파일들
+✅ templates/ - HTML 템플릿
+✅ static/ - CSS, JS, 이미지 파일
+✅ data/ - 데이터 파일들
+```
 
-### 1. Railway (권장)
-- **무료 티어**: 월 $5 크레딧
-- **리소스**: 1GB RAM, 3GB 저장공간
-- **장점**: GitHub 연동, 자동 배포, 관대한 제한
+## 🚀 Render 배포 단계
 
-### 2. Heroku
-- **무료 티어**: 없음 (유료만)
-- **리소스**: 512MB RAM (무료 플랜 없음)
-- **장점**: 안정적, 확장성 좋음
+### 1단계: Render 계정 설정
+1. [Render.com](https://render.com) 가입
+2. GitHub 저장소 연결
+3. 새 Web Service 생성
 
-### 3. Render
-- **무료 티어**: 512MB RAM
-- **리소스**: 제한적이지만 무료
-- **장점**: 간단한 배포
+### 2단계: 서비스 설정
+```yaml
+# render.yaml 설정
+services:
+  - type: web
+    name: kati-customs-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+```
 
-## 💰 비용 정보
+### 3단계: 환경 변수 설정
+- `SECRET_KEY`: 자동 생성
+- `IS_RENDER`: true
+- `PORT`: 10000
 
-### Railway
-- **무료**: 월 $5 크레딧 (충분함)
-- **유료**: $20/월부터 (대규모 사용시)
+### 4단계: 배포 실행
+1. GitHub 저장소에 코드 푸시
+2. Render에서 자동 배포 시작
+3. 빌드 로그 모니터링
 
-### 외부 AI API 비용
-- **Google Cloud Vision**: $1.50/1000회 요청
-- **Azure Computer Vision**: $1.00/1000회 요청  
-- **OpenAI GPT-3.5**: $0.002/1000 토큰
+## 🔍 배포 문제 해결
 
-### 예상 월 비용
-- **소규모 사용**: $5-10/월
-- **중규모 사용**: $20-50/월
-- **대규모 사용**: $100+/월
+### 일반적인 오류들
 
-## 🔑 환경변수 설정
+#### 1. 빌드 타임아웃
+```bash
+# 해결방법: requirements.txt 최적화
+# 무거운 라이브러리들을 선택적으로 설치
+```
 
-### 필수 환경변수
+#### 2. 메모리 부족
+```bash
+# 해결방법: gunicorn 워커 수 조정
+startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+```
+
+#### 3. 모듈 import 오류
+```bash
+# 해결방법: try-except 블록으로 안전한 import
+try:
+    import heavy_module
+except ImportError:
+    print("모듈을 찾을 수 없습니다")
+```
+
+### 빌드 로그 확인
+```bash
+# Render 대시보드에서 실시간 로그 확인
+# 주요 체크포인트:
+# 1. Python 버전 확인
+# 2. pip 설치 성공
+# 3. 모델 파일 로드
+# 4. Flask 앱 시작
+```
+
+## 📊 성능 최적화
+
+### 1. 메모리 사용량 최적화
+- Gunicorn 워커 수: 1-2개
+- 타임아웃: 120초
+- 메모리 제한: 512MB
+
+### 2. 빌드 시간 최적화
+- 불필요한 파일 제외
+- 캐시 활용
+- 의존성 최소화
+
+### 3. 런타임 최적화
+- 모델 로딩 지연
+- 이미지 처리 최적화
+- 데이터베이스 연결 풀링
+
+## 🔒 보안 설정
+
+### 1. 환경 변수
 ```bash
 SECRET_KEY=your_secret_key_here
-IS_RAILWAY=true
+IS_RENDER=true
+DATABASE_URL=your_database_url
 ```
 
-### 선택적 AI API 키 (성능 향상)
+### 2. 파일 업로드 보안
+```python
+# app.py에서 설정
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 제한
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+```
+
+## 📈 모니터링
+
+### 1. 헬스 체크
+- 엔드포인트: `/`
+- 응답 시간: < 5초
+- 상태 코드: 200
+
+### 2. 로그 모니터링
 ```bash
-GOOGLE_CLOUD_API_KEY=your_google_api_key
-AZURE_VISION_KEY=your_azure_key
-AZURE_VISION_ENDPOINT=your_azure_endpoint
-OPENAI_API_KEY=your_openai_key
+# 주요 로그 메시지
+✅ 모든 MVP 모듈 import 성공
+✅ 웹 MVP 모델 로드 완료
+🚀 Flask 앱 시작
 ```
 
-## 📦 배포 단계
+### 3. 성능 메트릭
+- 응답 시간
+- 메모리 사용량
+- CPU 사용률
+- 에러율
 
-### 1. GitHub 푸시
-```bash
-git add .
-git commit -m "클라우드 배포 준비 완료"
-git push origin main
-```
+## 🛠️ 유지보수
 
-### 2. Railway 배포
-1. [Railway.app](https://railway.app) 가입
-2. GitHub 저장소 연결
-3. 자동 배포 시작
+### 1. 정기 업데이트
+- 의존성 패키지 업데이트
+- 보안 패치 적용
+- 성능 최적화
 
-### 3. 환경변수 설정
-- Railway 대시보드에서 환경변수 설정
-- AI API 키 추가 (선택사항)
+### 2. 백업
+- 코드 백업 (GitHub)
+- 데이터 백업 (Render 제공)
+- 설정 백업
 
-## 🎯 배포 후 확인사항
-
-### ✅ 정상 작동 확인
-- [ ] 웹사이트 접속 가능
-- [ ] 모든 페이지 로딩
-- [ ] 파일 업로드 기능
-- [ ] OCR 처리 기능
-- [ ] 규제 정보 조회
-- [ ] 문서 생성 기능
-
-### ⚠️ 문제 해결
-- **메모리 부족**: Railway 유료 플랜으로 업그레이드
-- **API 제한**: AI API 키 설정
-- **파일 저장**: 클라우드 스토리지 연동
-
-## 🔄 업데이트 방법
-
-### 자동 배포
-- GitHub에 푸시하면 자동 배포
-- 환경변수 변경 시 수동 재배포 필요
-
-### 수동 배포
-```bash
-git push origin main
-# Railway에서 자동으로 배포됨
-```
+### 3. 장애 대응
+- 자동 재시작 설정
+- 로그 분석
+- 문제 해결 가이드
 
 ## 📞 지원
 
 ### 문제 발생 시
-1. Railway 로그 확인
-2. 환경변수 설정 확인
-3. AI API 키 설정 확인
-4. 메모리 사용량 확인
+1. Render 로그 확인
+2. GitHub Issues 등록
+3. 개발팀 문의
 
-### 연락처
-- 기술 지원: 개발팀
-- 비용 문의: Railway 고객지원 
+### 유용한 링크
+- [Render 문서](https://render.com/docs)
+- [Flask 문서](https://flask.palletsprojects.com/)
+- [Gunicorn 문서](https://gunicorn.org/)
+
+---
+
+**배포 완료 후 확인사항:**
+- ✅ 웹사이트 접속 가능
+- ✅ 모든 기능 정상 작동
+- ✅ 파일 업로드/다운로드 정상
+- ✅ 데이터베이스 연결 정상
+- ✅ API 응답 정상 

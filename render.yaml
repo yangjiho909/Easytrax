@@ -3,7 +3,7 @@ services:
     name: kati-customs-system
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
@@ -11,4 +11,15 @@ services:
         generateValue: true
       - key: IS_RENDER
         value: true
-    autoDeploy: true 
+      - key: PORT
+        value: 10000
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - requirements.txt
+        - app.py
+        - "*.py"
+        - templates/**
+        - static/**
+    healthCheckPath: /
+    numInstances: 1 
