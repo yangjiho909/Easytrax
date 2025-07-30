@@ -29,34 +29,106 @@ try:
 except ImportError as e:
     print(f"⚠️ 무료 시스템 모듈 import 실패: {e}")
 
-# MVP 모듈들 import
+# MVP 모듈들 import (안전한 방식)
 try:
     from mvp_regulations import get_mvp_regulations, get_mvp_countries, get_mvp_products, display_mvp_regulation_info
-    from nutrition_label_generator import NutritionLabelGenerator, APIImageGenerator
-    from dashboard_analyzer import DashboardAnalyzer
-    from document_generator import DocumentGenerator
-    from integrated_nlg_engine import IntegratedNLGEngine
-    from advanced_label_generator import AdvancedLabelGenerator
-    from real_time_regulation_system import RealTimeRegulationCrawler
-    from action_plan_generator import ActionPlanGenerator
-    from simple_pdf_generator import SimplePDFGenerator
-    from label_ocr_extractor import LabelOCRExtractor
-    from label_compliance_checker import LabelComplianceChecker
-    from enhanced_keyword_expander import EnhancedKeywordExpander
-    print("✅ 모든 MVP 모듈 import 성공")
+    print("✅ MVP 규정 모듈 import 성공")
 except ImportError as e:
-    print(f"⚠️ 일부 모듈을 찾을 수 없습니다: {e}")
-    # DocumentGenerator가 없을 경우를 위한 대체 클래스
+    print(f"⚠️ MVP 규정 모듈을 찾을 수 없습니다: {e}")
+
+try:
+    from nutrition_label_generator import NutritionLabelGenerator, APIImageGenerator
+    print("✅ 영양성분표 생성기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 영양성분표 생성기를 찾을 수 없습니다: {e}")
+    # 대체 클래스
+    class NutritionLabelGenerator:
+        def __init__(self):
+            print("⚠️ NutritionLabelGenerator 대체 클래스 사용")
+        def generate_label(self, *args, **kwargs):
+            return "대체 영양성분표 생성"
+    
+    class APIImageGenerator:
+        def __init__(self):
+            print("⚠️ APIImageGenerator 대체 클래스 사용")
+        def generate_image(self, *args, **kwargs):
+            return "대체 이미지 생성"
+
+try:
+    from dashboard_analyzer import DashboardAnalyzer
+    print("✅ 대시보드 분석기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 대시보드 분석기를 찾을 수 없습니다: {e}")
+    # 대체 클래스
+    class DashboardAnalyzer:
+        def __init__(self):
+            print("⚠️ DashboardAnalyzer 대체 클래스 사용")
+        def analyze(self, *args, **kwargs):
+            return {"status": "대체 분석 완료"}
+
+try:
+    from document_generator import DocumentGenerator
+    print("✅ 문서 생성기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 문서 생성기를 찾을 수 없습니다: {e}")
+    # 대체 클래스
     class DocumentGenerator:
         def __init__(self):
             print("⚠️ DocumentGenerator 대체 클래스 사용")
-        
         def generate_document(self, doc_type, country, product, company_info, **kwargs):
             return f"대체 {doc_type} 생성 - {country} {product}"
-        
         def generate_all_documents(self, country, product, company_info, **kwargs):
             return {"상업송장": f"대체 상업송장 - {country} {product}", 
                    "포장명세서": f"대체 포장명세서 - {country} {product}"}
+
+# 고급 모듈들 (선택적)
+try:
+    from integrated_nlg_engine import IntegratedNLGEngine
+    print("✅ NLG 엔진 import 성공")
+except ImportError as e:
+    print(f"⚠️ NLG 엔진을 찾을 수 없습니다: {e}")
+
+try:
+    from advanced_label_generator import AdvancedLabelGenerator
+    print("✅ 고급 라벨 생성기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 고급 라벨 생성기를 찾을 수 없습니다: {e}")
+
+try:
+    from real_time_regulation_system import RealTimeRegulationCrawler
+    print("✅ 실시간 규제 크롤러 import 성공")
+except ImportError as e:
+    print(f"⚠️ 실시간 규제 크롤러를 찾을 수 없습니다: {e}")
+
+try:
+    from action_plan_generator import ActionPlanGenerator
+    print("✅ 액션 플랜 생성기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 액션 플랜 생성기를 찾을 수 없습니다: {e}")
+
+try:
+    from simple_pdf_generator import SimplePDFGenerator
+    print("✅ 간단 PDF 생성기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 간단 PDF 생성기를 찾을 수 없습니다: {e}")
+
+try:
+    from label_ocr_extractor import LabelOCRExtractor
+    print("✅ 라벨 OCR 추출기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 라벨 OCR 추출기를 찾을 수 없습니다: {e}")
+
+try:
+    from label_compliance_checker import LabelComplianceChecker
+    print("✅ 라벨 규정 준수 검사기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 라벨 규정 준수 검사기를 찾을 수 없습니다: {e}")
+
+try:
+    from enhanced_keyword_expander import EnhancedKeywordExpander
+    print("✅ 고급 키워드 확장기 import 성공")
+except ImportError as e:
+    print(f"⚠️ 고급 키워드 확장기를 찾을 수 없습니다: {e}")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'kati_mvp_secret_key_2024')
