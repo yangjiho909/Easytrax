@@ -1,26 +1,14 @@
 services:
   - type: web
-    name: kati-customs-system
+    name: kati-export-helper
     env: python
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.4
-      - key: SECRET_KEY
-        generateValue: true
-      - key: IS_RENDER
-        value: true
-      - key: PORT
-        value: 10000
-    autoDeploy: false  # 자동 배포 비활성화
-    suspend: true  # 서비스 일시 중지
-    buildFilter:
-      paths:
-        - requirements.txt
-        - app.py
-        - "*.py"
-        - templates/**
-        - static/**
+        value: 3.11.7
+      - key: FLASK_ENV
+        value: production
     healthCheckPath: /
-    numInstances: 0  # 인스턴스 수를 0으로 설정하여 서비스 중지 
+    autoDeploy: true 
