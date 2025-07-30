@@ -131,7 +131,7 @@ print("⚠️ 고급 모듈들 임시 비활성화 (배포 성공 후 단계적 
 # except ImportError as e:
 #     print(f"⚠️ 고급 키워드 확장기를 찾을 수 없습니다: {e}")
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'kati_mvp_secret_key_2024')
 
 # 업로드 폴더 설정 (Heroku 호환)
