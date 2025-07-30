@@ -6,6 +6,14 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import os
 
+# PyMuPDF 선택적 import
+try:
+    import fitz
+    FITZ_AVAILABLE = True
+except ImportError:
+    FITZ_AVAILABLE = False
+    print("⚠️ PyMuPDF (fitz) 모듈이 없습니다. PDF 생성 기능이 제한됩니다.")
+
 class DocumentGenerator:
     """규제 정보 기반 자동 서류 생성 시스템"""
     
@@ -680,14 +688,66 @@ EORI 번호: {eori_number}
             print("⚠️ 상세 규제정보를 찾을 수 없습니다.")
             return {}
     
-    def generate_document(self, doc_type: str, country: str, product: str, 
-                         company_info: Dict, **kwargs) -> str:
+    def fill_pdf_template(self, template_path, field_values, output_path):
+        """PDF 템플릿의 텍스트 필드에 값 채워서 저장 (PyMuPDF 기반)"""
+        if not FITZ_AVAILABLE:
+            print("❌ PyMuPDF 모듈이 없어 PDF 템플릿 채우기가 불가능합니다.")
+            return
+
+        doc = fitz.open(template_path)
+        for page in doc:
+            for field, value in field_values.items():
+                # 텍스트 치환 (간단 버전: 필드명으로 검색 후 value로 대체)
+                areas = page.search_for(field)
+                for rect in areas:
+                    page.add_redact_annot(rect, fill=(1,1,1))
+                    page.apply_redactions()
+                    page.insert_text((rect.x0, rect.y0), str(value), fontsize=11, color=(0,0,0))
+        doc.save(output_path)
+        doc.close()
+
+    def generate_document(self, doc_type, country, product, 
+                         company_info, **kwargs) -> str:
         """특정 서류 생성"""
         
-        if doc_type not in self.templates:
-            return f"❌ 지원하지 않는 서류 유형: {doc_type}"
+        # 서류 유형 매핑
+        doc_mapping = {
+            # 기본 필수 서류
+            "상업송장": "상업송장",
+            "포장명세서": "포장명세서", 
+            "원산지증명서": "원산지증명서",
+            "선하증권": "선하증권",
+            "수출신고서": "수출신고서",
+            "수출신고필증": "수출신고필증",
+            "위생증명서": "위생증명서",
+            
+            # 국가별 특화 서류
+            "중문라벨": "중문라벨",
+            "제조공정도": "중문라벨",
+            "검사신청서류": "위생증명서",
+            "FDA등록번호": "FDA등록번호",
+            "FSVP인증서": "FSVP인증서",
+            "FCE/SID번호": "FDA등록번호",
+            "방사능검사증명서": "방사능검사증명서",
+            "생산지증명서": "생산지증명서",
+            "EU작업장등록": "EU작업장등록",
+            "EORI번호": "EORI번호",
+            
+            # 식품 특화 서류
+            "식품안전인증서": "식품안전인증서",
+            "성분분석서": "성분분석서",
+            "라벨검토서": "라벨검토서",
+            "영양성분분석서": "성분분석서"
+        }
         
-        template = self.templates[doc_type]
+        # 매핑된 서류 유형 확인
+        mapped_doc_type = doc_mapping.get(doc_type, doc_type)
+        
+        if mapped_doc_type not in self.templates:
+            return f"❌ 지원하지 않는 서류 유형: {doc_type} (매핑: {mapped_doc_type})"
+        
+        # 매핑된 서류 유형으로 템플릿 가져오기
+        template = self.templates[mapped_doc_type]
         
         # 기본 정보 설정
         current_date = datetime.now()
@@ -727,19 +787,19 @@ EORI 번호: {eori_number}
             "declaration_authority": company_info.get("declaration_authority", "신고기관")
         }
         
-        # 서류별 특화 내용 생성
-        if doc_type == "상업송장":
+        # 서류별 특화 내용 생성 (매핑된 서류 유형 사용)
+        if mapped_doc_type == "상업송장":
             doc_data.update(self._generate_invoice_data(company_info, kwargs))
-        elif doc_type == "포장명세서":
+        elif mapped_doc_type == "포장명세서":
             doc_data.update(self._generate_packing_data(company_info, kwargs))
-        elif doc_type == "원산지증명서":
+        elif mapped_doc_type == "원산지증명서":
             doc_data.update({
                 "origin_standards": self._format_list(regulations.get("허용기준", [])),
                 "fta_applicable": "적용 가능" if country in ["미국", "EU", "중국"] else "해당 없음"
             })
-        elif doc_type == "선하증권":
+        elif mapped_doc_type == "선하증권":
             doc_data.update(self._generate_bill_of_lading_data(company_info, kwargs))
-        elif doc_type == "수출신고필증":
+        elif mapped_doc_type == "수출신고필증":
             doc_data.update({
                 "declaration_details": self._generate_declaration_details(regulations),
                 "required_documents": self._format_list(regulations.get("필요서류", [])),
@@ -747,42 +807,42 @@ EORI 번호: {eori_number}
                 "approval_authority": "관세청",
                 "approval_date": issue_date
             })
-        elif doc_type == "위생증명서":
+        elif mapped_doc_type == "위생증명서":
             doc_data.update({
                 "health_standards": self._format_list(regulations.get("허용기준", [])),
                 "inspection_results": self._generate_health_inspection_results(regulations)
             })
-        elif doc_type == "FDA등록번호":
+        elif mapped_doc_type == "FDA등록번호":
             doc_data.update(self._generate_fda_data(company_info, kwargs))
-        elif doc_type == "FSVP인증서":
+        elif mapped_doc_type == "FSVP인증서":
             doc_data.update(self._generate_fsvp_data(company_info, kwargs))
-        elif doc_type == "중문라벨":
+        elif mapped_doc_type == "중문라벨":
             doc_data.update(self._generate_chinese_label_data(company_info, kwargs))
-        elif doc_type == "방사능검사증명서":
+        elif mapped_doc_type == "방사능검사증명서":
             doc_data.update(self._generate_radiation_data(company_info, kwargs))
-        elif doc_type == "생산지증명서":
+        elif mapped_doc_type == "생산지증명서":
             doc_data.update(self._generate_production_area_data(company_info, kwargs))
-        elif doc_type == "EU작업장등록":
+        elif mapped_doc_type == "EU작업장등록":
             doc_data.update(self._generate_eu_facility_data(company_info, kwargs))
-        elif doc_type == "EORI번호":
+        elif mapped_doc_type == "EORI번호":
             doc_data.update(self._generate_eori_data(company_info, kwargs))
-        elif doc_type == "식품안전인증서":
+        elif mapped_doc_type == "식품안전인증서":
             doc_data.update({
                 "standards": self._format_list(regulations.get("허용기준", [])),
                 "requirements": self._format_list(regulations.get("제한사항", []))
             })
-        elif doc_type == "성분분석서":
+        elif mapped_doc_type == "성분분석서":
             doc_data.update({
                 "analysis_results": self._generate_analysis_results(regulations),
                 "allowed_standards": self._format_list(regulations.get("허용기준", []))
             })
-        elif doc_type == "라벨검토서":
+        elif mapped_doc_type == "라벨검토서":
             doc_data.update({
                 "label_requirements": self._format_list(regulations.get("제한사항", [])),
                 "review_results": self._generate_label_review_results(regulations),
                 "precautions": self._format_list(regulations.get("주의사항", []))
             })
-        elif doc_type == "수출신고서":
+        elif mapped_doc_type == "수출신고서":
             doc_data.update({
                 "required_documents": self._format_list(regulations.get("필요서류", [])),
                 "declaration_procedures": self._format_list(regulations.get("통관절차", []))
@@ -855,16 +915,24 @@ EORI 번호: {eori_number}
     
     def _generate_invoice_data(self, company_info: Dict, kwargs: Dict) -> Dict:
         """상업송장 데이터 생성"""
+        # 구매자 정보 처리
+        buyer_info = kwargs.get('buyer_info', {})
+        
+        # 총액 계산
+        quantity = kwargs.get('quantity', 1000)
+        unit_price = kwargs.get('unit_price', 10.0)
+        total_amount = quantity * unit_price
+        
         return {
             "invoice_number": f"INV-{datetime.now().strftime('%Y%m%d')}-{kwargs.get('quantity', '001')}",
-            "importer_name": kwargs.get("importer_name", "수입자명"),
-            "importer_address": kwargs.get("importer_address", "수입자주소"),
-            "importer_contact": kwargs.get("importer_contact", "수입자연락처"),
-            "quantity": kwargs.get("quantity", "1,000개"),
-            "unit_price": kwargs.get("unit_price", "USD 10.00"),
-            "total_amount": kwargs.get("total_amount", "USD 10,000.00"),
+            "importer_name": buyer_info.get("name", kwargs.get("importer_name", "수입자명")),
+            "importer_address": buyer_info.get("address", kwargs.get("importer_address", "수입자주소")),
+            "importer_contact": buyer_info.get("contact", kwargs.get("importer_contact", "수입자연락처")),
+            "quantity": f"{kwargs.get('quantity', 1000):,}{kwargs.get('unit', '개')}",
+            "unit_price": f"{kwargs.get('unit_price', 10.0):.2f}",
+            "total_amount": f"{total_amount:,.2f}",
             "port_of_loading": kwargs.get("port_of_loading", "부산항"),
-            "final_destination": kwargs.get("final_destination", "도착항"),
+            "final_destination": kwargs.get("port_of_arrival", kwargs.get("final_destination", "도착항")),
             "incoterms": kwargs.get("incoterms", "FOB"),
             "payment_terms": kwargs.get("payment_terms", "L/C"),
             "currency": kwargs.get("currency", "USD")
@@ -872,23 +940,40 @@ EORI 번호: {eori_number}
     
     def _generate_packing_data(self, company_info: Dict, kwargs: Dict) -> Dict:
         """포장명세서 데이터 생성"""
-        return {
-            "packing_number": f"PKG-{datetime.now().strftime('%Y%m%d')}-{kwargs.get('quantity', '001')}",
-            "importer_name": kwargs.get("importer_name", "수입자명"),
-            "importer_address": kwargs.get("importer_address", "수입자주소"),
-            "quantity": kwargs.get("quantity", "1,000개"),
-            "net_weight": kwargs.get("net_weight", "500kg"),
-            "gross_weight": kwargs.get("gross_weight", "550kg"),
-            "cbm": kwargs.get("cbm", "2.5 CBM"),
-            "package_count": kwargs.get("package_count", "50박스"),
-            "marks_numbers": kwargs.get("marks_numbers", "MADE IN KOREA"),
-            "packing_details": self._format_list([
-                "제품명: 라면",
+        # 구매자 정보 처리
+        buyer_info = kwargs.get('buyer_info', {})
+        
+        # 상세 포장 내역 생성
+        packing_details = []
+        if kwargs.get('packing_unit'):
+            packing_details.append(f"포장단위: {kwargs.get('packing_unit')}")
+        if kwargs.get('box_size'):
+            packing_details.append(f"박스크기: {kwargs.get('box_size')}cm")
+        if kwargs.get('box_weight'):
+            packing_details.append(f"박스중량: {kwargs.get('box_weight')}kg")
+        if kwargs.get('total_boxes'):
+            packing_details.append(f"총박스수: {kwargs.get('total_boxes')}박스")
+        
+        # 기본값 설정
+        if not packing_details:
+            packing_details = [
                 "포장단위: 20개/박스",
                 "박스크기: 40cm x 30cm x 20cm",
                 "박스중량: 11kg",
                 "총박스수: 50박스"
-            ])
+            ]
+        
+        return {
+            "packing_number": f"PKG-{datetime.now().strftime('%Y%m%d')}-{kwargs.get('quantity', '001')}",
+            "importer_name": buyer_info.get("name", kwargs.get("importer_name", "수입자명")),
+            "importer_address": buyer_info.get("address", kwargs.get("importer_address", "수입자주소")),
+            "quantity": f"{kwargs.get('quantity', 1000):,}{kwargs.get('unit', '개')}",
+            "net_weight": f"{kwargs.get('net_weight', 500):.1f}kg",
+            "gross_weight": f"{kwargs.get('gross_weight', 550):.1f}kg",
+            "cbm": f"{kwargs.get('volume', 2.5):.1f} CBM",
+            "package_count": f"{kwargs.get('package_count', 50)}박스",
+            "marks_numbers": kwargs.get("package_marks", "MADE IN KOREA"),
+            "packing_details": self._format_list(packing_details)
         }
     
     def _generate_bill_of_lading_data(self, company_info: Dict, kwargs: Dict) -> Dict:

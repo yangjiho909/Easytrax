@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>규제 정보 - 나만의 통관 수출 도우미</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-section {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .regulation-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .regulation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .regulation-card.success {
+            border-left-color: var(--success-color);
+        }
+        
+        .regulation-card.warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .regulation-card.accent {
+            border-left-color: var(--accent-color);
+        }
+        
+        .nav-item {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .nav-icon {
+            margin-right: var(--spacing-sm);
+            width: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .alert {
+            border-radius: var(--border-radius-md);
+            border: none;
+        }
+        
+        .alert-success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .country-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .country-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .country-card.selected {
+            border: 2px solid var(--secondary-color);
+            background: rgba(52, 152, 219, 0.05);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
+            </div>
+            
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        대시보드
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/customs-analysis" class="nav-link">
+                        <i class="fas fa-search nav-icon"></i>
+                        통관 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/regulation-info" class="nav-link active">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        규제 정보
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/compliance-analysis" class="nav-link">
+                        <i class="fas fa-check-circle nav-icon"></i>
+                        준수성 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                                            <a href="/enhanced-document-generation" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        서류 생성
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/nutrition-label" class="nav-link">
+                        <i class="fas fa-tags nav-icon"></i>
+                        라벨 생성
+                    </a>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 헤더 -->
+            <div class="header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="mb-1">
+                            <i class="fas fa-info-circle me-2"></i>
+                            실시간 규제 정보
+                        </h1>
+                        <p class="text-muted mb-0">각국의 최신 식품 수출 규제 정보를 확인하세요</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 국가 선택 -->
+            <div class="form-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-globe me-2"></i>
+                    국가 선택
+                </h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="country-card" onclick="selectCountry('중국')">
+                            <div class="text-center">
+                                <h3>🇨🇳</h3>
+                                <h5>중국</h5>
+                                <small class="text-muted">GB 7718-2025</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="country-card" onclick="selectCountry('미국')">
+                            <div class="text-center">
+                                <h3>🇺🇸</h3>
+                                <h5>미국</h5>
+                                <small class="text-muted">FDA 규정</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 규제 정보 조회 -->
+            <div class="form-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-search me-2"></i>
+                    규제 정보 조회
+                </h4>
+                <div class="row">
+                    <div class="col-md-8">
+                        <label for="regulationCountry" class="form-label">국가</label>
+                        <select class="form-control" id="regulationCountry">
+                            <option value="">국가를 선택하세요</option>
+                            <option value="중국">🇨🇳 중국</option>
+                            <option value="미국">🇺🇸 미국</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="getRegulationInfo()">
+                            <i class="fas fa-search me-2"></i>
+                            규제 정보 조회
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 로딩 섹션 -->
+            <div id="loadingSection" class="loading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">조회 중...</span>
+                </div>
+                <p class="mt-3">규제 정보를 조회하고 있습니다...</p>
+            </div>
+            
+            <!-- 오류 섹션 -->
+            <div id="errorSection" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+            
+            <!-- 결과 섹션 -->
+            <div id="resultsSection" style="display: none;">
+                <div class="form-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-file-alt me-2"></i>
+                        규제 정보
+                    </h4>
+                    <div id="regulationContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedCountry = '';
+
+        // 국가 선택
+        function selectCountry(country) {
+            selectedCountry = country;
+            document.getElementById('regulationCountry').value = country;
+            
+            // 모든 카드에서 선택 상태 제거
+            document.querySelectorAll('.country-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 선택된 카드에 선택 상태 추가
+            event.currentTarget.classList.add('selected');
+        }
+
+        // 규제 정보 조회
+        function getRegulationInfo() {
+            const country = document.getElementById('regulationCountry').value;
+            
+            if (!country) {
+                alert('국가를 선택해주세요.');
+                return;
+            }
+            
+            // UI 상태 변경
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            
+            // API 호출
+            fetch('/api/regulation-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    country: country
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorSection').style.display = 'block';
+                } else {
+                    displayRegulationInfo(data.regulation_info, country);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('errorMessage').textContent = '서버 오류가 발생했습니다.';
+                document.getElementById('errorSection').style.display = 'block';
+            });
+        }
+
+        // 규제 정보 표시
+        function displayRegulationInfo(regulationInfo, country) {
+            const container = document.getElementById('regulationContainer');
+            let html = '';
+            
+            if (country === '중국') {
+                html = `
+                    <div class="regulation-card success">
+                        <h5>
+                            <i class="fas fa-flag me-2"></i>
+                            🇨🇳 중국 식품 라벨링 규정 (GB 7718-2025)
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📋 필수 표시 사항</h6>
+                                <ul>
+                                    <li>제품명</li>
+                                    <li>성분표</li>
+                                    <li>영양성분표</li>
+                                    <li>유통기한</li>
+                                    <li>제조사 정보</li>
+                                    <li>8대 알레르기 정보</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>📄 필요 서류</h6>
+                                <ul>
+                                    <li>중문라벨</li>
+                                    <li>제조공정도</li>
+                                    <li>검사 신청서류</li>
+                                    <li>위생증명서</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>⚠️ 주의사항</h6>
+                            <p>중국 GB 7718-2025 규정에 따라 모든 식품 라벨은 중국어로 작성되어야 하며, QR코드 디지털 라벨이 권장됩니다.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (country === '미국') {
+                html = `
+                    <div class="regulation-card success">
+                        <h5>
+                            <i class="fas fa-flag me-2"></i>
+                            🇺🇸 미국 FDA 식품 규정
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📋 필수 표시 사항</h6>
+                                <ul>
+                                    <li>제품명</li>
+                                    <li>성분표</li>
+                                    <li>영양성분표</li>
+                                    <li>9대 알레르기 정보</li>
+                                    <li>제조사 정보</li>
+                                    <li>유통기한 (권장)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>📄 필요 서류</h6>
+                                <ul>
+                                    <li>FDA 등록번호 (FFR)</li>
+                                    <li>FSVP 인증서</li>
+                                    <li>FCE/SID 번호</li>
+                                    <li>위생증명서</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>⚠️ 주의사항</h6>
+                            <p>미국 FDA 규정에 따라 모든 식품은 FDA에 등록되어야 하며, 9대 알레르기 정보가 필수로 표시되어야 합니다.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (country === '일본') {
+                html = `
+                    <div class="regulation-card success">
+                        <h5>
+                            <i class="fas fa-flag me-2"></i>
+                            🇯🇵 일본 JAS 식품 규정
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📋 필수 표시 사항</h6>
+                                <ul>
+                                    <li>제품명</li>
+                                    <li>성분표</li>
+                                    <li>영양성분표</li>
+                                    <li>유통기한</li>
+                                    <li>제조사 정보</li>
+                                    <li>방사능 검사 정보</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>📄 필요 서류</h6>
+                                <ul>
+                                    <li>방사능 검사증명서</li>
+                                    <li>생산지증명서</li>
+                                    <li>위생증명서</li>
+                                    <li>검역 신청서</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>⚠️ 주의사항</h6>
+                            <p>일본 JAS 규정에 따라 방사능 검사가 필수이며, 모든 라벨은 일본어로 작성되어야 합니다.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (country === 'EU') {
+                html = `
+                    <div class="regulation-card success">
+                        <h5>
+                            <i class="fas fa-flag me-2"></i>
+                            🇪🇺 EU 식품 규정
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📋 필수 표시 사항</h6>
+                                <ul>
+                                    <li>제품명</li>
+                                    <li>성분표</li>
+                                    <li>영양성분표</li>
+                                    <li>유통기한</li>
+                                    <li>제조사 정보</li>
+                                    <li>14대 알레르기 정보</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>📄 필요 서류</h6>
+                                <ul>
+                                    <li>EU 작업장 등록</li>
+                                    <li>EORI 번호</li>
+                                    <li>위생증명서</li>
+                                    <li>원산지증명서</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>⚠️ 주의사항</h6>
+                            <p>EU 규정에 따라 14대 알레르기 정보가 필수이며, 모든 회원국에서 인정되는 라벨링이 필요합니다.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 현재 페이지 활성화
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

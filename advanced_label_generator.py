@@ -21,13 +21,14 @@ class AdvancedLabelGenerator:
     """2027년 중국, 2025년 미국 규정을 반영한 고도화된 라벨 생성기"""
     
     def __init__(self):
-        self.label_width = 500
-        self.label_height = 700
+        # OCR 인식도 향상을 위한 고해상도 설정
+        self.label_width = 800  # 해상도 증가
+        self.label_height = 1000  # 해상도 증가
         self.background_color = (255, 255, 255)  # 흰색
-        self.text_color = (0, 0, 0)  # 검은색
+        self.text_color = (0, 0, 0)  # 검은색 (OCR 최적화)
         self.accent_color = (0, 100, 200)  # 파란색
         self.warning_color = (255, 0, 0)  # 빨간색
-        self.allergy_color = (255, 140, 0)  # 주황색 (알레르기 강조)
+        self.allergy_color = (255, 140, 0)  # 주황색  # 주황색 (알레르기 강조)
         
         # 폰트 설정 (다국어 지원 폰트 우선 사용)
         try:
@@ -52,11 +53,12 @@ class AdvancedLabelGenerator:
             font_found = False
             for font_path in multilingual_fonts:
                 try:
-                    self.title_font = ImageFont.truetype(font_path, 28)
-                    self.header_font = ImageFont.truetype(font_path, 20)
-                    self.body_font = ImageFont.truetype(font_path, 16)
-                    self.small_font = ImageFont.truetype(font_path, 14)
-                    self.allergy_font = ImageFont.truetype(font_path, 16)  # 알레르기 강조용
+                    # OCR 인식도 향상을 위한 폰트 크기 증가
+                    self.title_font = ImageFont.truetype(font_path, 36)  # 제목 폰트 크기 증가
+                    self.header_font = ImageFont.truetype(font_path, 28)  # 헤더 폰트 크기 증가
+                    self.body_font = ImageFont.truetype(font_path, 22)    # 본문 폰트 크기 증가
+                    self.small_font = ImageFont.truetype(font_path, 20)   # 작은 폰트 크기 증가
+                    self.allergy_font = ImageFont.truetype(font_path, 22) # 알레르기 폰트 크기 증가
                     print(f"✅ 다국어 폰트 로드 성공: {font_path}")
                     font_found = True
                     break
@@ -102,24 +104,32 @@ class AdvancedLabelGenerator:
         
         y_position = 20
         
-        # 1. 제품명 (중국어 필수)
-        product_name = product_info.get("product_name_chinese", "拉面")
-        draw.text((20, y_position), product_name, fill=self.accent_color, font=self.title_font)
+        # 1. 제품명 (사용자 입력 우선, 중국어 변환)
+        product_name = product_info.get("product_name", product_info.get("name", "라면"))
+        # 간단한 중국어 변환 (실제로는 번역 API 사용 권장)
+        chinese_name_map = {
+            "라면": "拉面", "김치": "泡菜", "된장": "大酱", "고추장": "辣椒酱",
+            "라면": "拉面", "김치": "泡菜", "된장": "大酱", "고추장": "辣椒酱"
+        }
+        product_name_chinese = chinese_name_map.get(product_name, f"{product_name}")
+        draw.text((20, y_position), product_name_chinese, fill=self.accent_color, font=self.title_font)
         y_position += 40
         
-        # 2. 원산지 (중국어 필수)
-        origin = "原产国：韩国"  # 중국어로 원산지 표기
-        draw.text((20, y_position), origin, fill=self.text_color, font=self.body_font)
+        # 2. 원산지 (사용자 입력 우선)
+        origin = product_info.get("origin", "대한민국")
+        origin_chinese = "原产国：韩国" if origin == "대한민국" else f"原产国：{origin}"
+        draw.text((20, y_position), origin_chinese, fill=self.text_color, font=self.body_font)
         y_position += 30
         
-        # 3. 제조사 정보
-        manufacturer = product_info.get("manufacturer_chinese", "韩国食品公司")
-        draw.text((20, y_position), f"制造商：{manufacturer}", fill=self.text_color, font=self.body_font)
+        # 3. 제조사 정보 (사용자 입력 우선)
+        manufacturer = product_info.get("manufacturer", "한국식품(주)")
+        manufacturer_chinese = "韩国食品公司" if manufacturer == "한국식품(주)" else f"{manufacturer}"
+        draw.text((20, y_position), f"制造商：{manufacturer_chinese}", fill=self.text_color, font=self.body_font)
         y_position += 30
         
-        # 4. 유통기한 (2027년 규정: 도달일 형식)
+        # 4. 유통기한 (사용자 입력 우선)
         expiry_date = product_info.get("expiry_date", "2026-12-31")
-        expiry_chinese = f"到期日：{expiry_date}"  # 도달일 형식
+        expiry_chinese = f"到期日：{expiry_date}"
         draw.text((20, y_position), expiry_chinese, fill=self.text_color, font=self.body_font)
         y_position += 40
         
@@ -159,22 +169,29 @@ class AdvancedLabelGenerator:
         
         y_position = 20
         
-        # 1. 제품명 (영어 필수)
-        product_name = product_info.get("product_name_english", "Korean Ramen")
-        draw.text((20, y_position), product_name, fill=self.accent_color, font=self.title_font)
+        # 1. 제품명 (사용자 입력 우선, 영어 변환)
+        product_name = product_info.get("product_name", product_info.get("name", "라면"))
+        # 간단한 영어 변환 (실제로는 번역 API 사용 권장)
+        english_name_map = {
+            "라면": "Korean Ramen", "김치": "Korean Kimchi", "된장": "Korean Doenjang", "고추장": "Korean Gochujang"
+        }
+        product_name_english = english_name_map.get(product_name, f"Korean {product_name}")
+        draw.text((20, y_position), product_name_english, fill=self.accent_color, font=self.title_font)
         y_position += 40
         
-        # 2. 원산지 (영어 필수)
-        origin = "Country of Origin: Republic of Korea"
-        draw.text((20, y_position), origin, fill=self.text_color, font=self.body_font)
+        # 2. 원산지 (사용자 입력 우선)
+        origin = product_info.get("origin", "대한민국")
+        origin_english = "Republic of Korea" if origin == "대한민국" else origin
+        draw.text((20, y_position), f"Country of Origin: {origin_english}", fill=self.text_color, font=self.body_font)
         y_position += 30
         
-        # 3. 제조사 정보
-        manufacturer = product_info.get("manufacturer_english", "Korean Food Co., Ltd.")
-        draw.text((20, y_position), f"Manufacturer: {manufacturer}", fill=self.text_color, font=self.body_font)
+        # 3. 제조사 정보 (사용자 입력 우선)
+        manufacturer = product_info.get("manufacturer", "한국식품(주)")
+        manufacturer_english = "Korean Food Co., Ltd." if manufacturer == "한국식품(주)" else f"{manufacturer}"
+        draw.text((20, y_position), f"Manufacturer: {manufacturer_english}", fill=self.text_color, font=self.body_font)
         y_position += 30
         
-        # 4. 유통기한
+        # 4. 유통기한 (사용자 입력 우선)
         expiry_date = product_info.get("expiry_date", "2026-12-31")
         draw.text((20, y_position), f"Best Before: {expiry_date}", fill=self.text_color, font=self.body_font)
         y_position += 40
@@ -220,16 +237,16 @@ class AdvancedLabelGenerator:
         draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.text_color, width=1)
         y_position += 10
         
-        # 1+6 필수 영양성분
+        # 1+6 필수 영양성분 (사용자 입력 우선)
         nutrition_data = product_info.get("nutrition", {})
         china_nutrition = {
-            "能量": nutrition_data.get("열량", "400 kcal"),
-            "蛋白质": nutrition_data.get("단백질", "12g"),
-            "脂肪": nutrition_data.get("지방", "15g"),
-            "饱和脂肪": nutrition_data.get("포화지방", "5g"),
-            "碳水化合物": nutrition_data.get("탄수화물", "60g"),
-            "糖": nutrition_data.get("당류", "5g"),
-            "钠": nutrition_data.get("나트륨", "800mg")
+            "能量": f"{nutrition_data.get('calories', '400')} kcal",
+            "蛋白质": f"{nutrition_data.get('protein', '12')}g",
+            "脂肪": f"{nutrition_data.get('fat', '15')}g",
+            "饱和脂肪": f"{nutrition_data.get('saturated_fat', '5')}g",
+            "碳水化合物": f"{nutrition_data.get('carbs', '60')}g",
+            "糖": f"{nutrition_data.get('sugar', '5')}g",
+            "钠": f"{nutrition_data.get('sodium', '800')}mg"
         }
         
         for nutrient, value in china_nutrition.items():
@@ -278,19 +295,19 @@ class AdvancedLabelGenerator:
         draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.text_color, width=2)
         y_position += 10
         
-        # 영양성분 (13개 필수)
+        # 영양성분 (13개 필수, 사용자 입력 우선)
         nutrition_data = product_info.get("nutrition", {})
         us_nutrition = [
-            ("Total Fat", nutrition_data.get("지방", "15g"), "25%"),
-            ("Saturated Fat", nutrition_data.get("포화지방", "5g"), "25%"),
+            ("Total Fat", f"{nutrition_data.get('fat', '15')}g", "25%"),
+            ("Saturated Fat", f"{nutrition_data.get('saturated_fat', '5')}g", "25%"),
             ("Trans Fat", "0g", "0%"),
             ("Cholesterol", "0mg", "0%"),
-            ("Sodium", nutrition_data.get("나트륨", "800mg"), "35%"),
-            ("Total Carbohydrate", nutrition_data.get("탄수화물", "60g"), "20%"),
-            ("Dietary Fiber", "2g", "8%"),
-            ("Total Sugars", nutrition_data.get("당류", "5g"), ""),
+            ("Sodium", f"{nutrition_data.get('sodium', '800')}mg", "35%"),
+            ("Total Carbohydrate", f"{nutrition_data.get('carbs', '60')}g", "20%"),
+            ("Dietary Fiber", f"{nutrition_data.get('fiber', '2')}g", "8%"),
+            ("Total Sugars", f"{nutrition_data.get('sugar', '5')}g", ""),
             ("Added Sugars", "0g", "0%"),
-            ("Protein", nutrition_data.get("단백질", "12g"), ""),
+            ("Protein", f"{nutrition_data.get('protein', '12')}g", ""),
             ("Vitamin D", "0mcg", "0%"),
             ("Calcium", "20mg", "2%"),
             ("Iron", "2mg", "10%"),
@@ -380,10 +397,15 @@ class AdvancedLabelGenerator:
         draw.text((20, y_position), "过敏原信息", fill=self.warning_color, font=self.header_font)
         y_position += 25
         
-        # 알레르기 성분
-        allergy_ingredients = product_info.get("allergy_ingredients", ["小麦", "大豆"])
-        
-        if allergy_ingredients:
+        # 사용자 입력 알레르기 정보
+        allergies = product_info.get("allergies", [])
+        if allergies:
+            # 알레르기 성분을 중국어로 변환
+            allergy_map = {
+                "밀": "小麦", "대두": "大豆", "계란": "鸡蛋", "우유": "牛奶",
+                "땅콩": "花生", "견과류": "坚果", "조개류": "贝类", "어류": "鱼类"
+            }
+            allergy_ingredients = [allergy_map.get(allergy, allergy) for allergy in allergies]
             draw.text((20, y_position), "含有: " + ", ".join(allergy_ingredients), 
                      fill=self.warning_color, font=self.body_font)
         else:
@@ -405,10 +427,15 @@ class AdvancedLabelGenerator:
         draw.text((20, y_position), "Allergen Information", fill=self.warning_color, font=self.header_font)
         y_position += 25
         
-        # 알레르기 성분
-        allergy_ingredients = product_info.get("allergy_ingredients_english", ["Wheat", "Soy"])
-        
-        if allergy_ingredients:
+        # 사용자 입력 알레르기 정보
+        allergies = product_info.get("allergies", [])
+        if allergies:
+            # 알레르기 성분을 영어로 변환
+            allergy_map = {
+                "밀": "Wheat", "대두": "Soy", "계란": "Egg", "우유": "Milk",
+                "땅콩": "Peanut", "견과류": "Tree Nuts", "조개류": "Shellfish", "어류": "Fish"
+            }
+            allergy_ingredients = [allergy_map.get(allergy, allergy) for allergy in allergies]
             draw.text((20, y_position), "Contains: " + ", ".join(allergy_ingredients), 
                      fill=self.warning_color, font=self.body_font)
         else:

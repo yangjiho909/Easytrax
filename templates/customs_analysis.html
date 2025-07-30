@@ -13,20 +13,150 @@
             --accent-color: #e74c3c;
             --success-color: #27ae60;
             --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
         }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
             min-height: 100vh;
         }
         
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
         .main-content {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 2rem 0;
-            padding: 2rem;
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: url('/static/세계로.jpg') center center/cover no-repeat;
+            padding: var(--spacing-xxl) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            min-height: 220px;
+        }
+        .header-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44,62,80,0.45);
+            border-radius: var(--border-radius-lg);
+            z-index: 1;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+        }
+        .header-logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(44,62,80,0.3);
+        }
+        .header-desc {
+            font-size: 1.25rem;
+            color: #e0e6ed;
+            text-shadow: 0 1px 4px rgba(44,62,80,0.2);
+        }
+        
+        /* 사이드바 네비게이션 스타일 */
+        .nav-link {
+            color: #e0e6ed !important;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff !important;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: #fff !important;
+            font-weight: 600;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
         }
         
         .navbar-brand {
@@ -101,6 +231,50 @@
             color: white;
         }
         
+        .keyword-expansion-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .expansion-method {
+            background: white;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #28a745;
+        }
+        
+        .expansion-method h6 {
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .expansion-words {
+            font-size: 0.9rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .enhanced-toggle {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .enhanced-toggle label {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+            color: white;
+        }
+        
         .loading {
             text-align: center;
             padding: 3rem;
@@ -142,45 +316,64 @@
             margin-bottom: 1rem;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 네비게이션 바 -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-asia me-2"></i>
-                나만의 통관 수출 도우미
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/customs-analysis">통관 분석</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/regulation-info">규제 정보</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
-                    </li>
-                </ul>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
             </div>
+            
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        대시보드
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/customs-analysis" class="nav-link active">
+                        <i class="fas fa-search nav-icon"></i>
+                        통관 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/regulation-info" class="nav-link">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        규제 정보
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/compliance-analysis" class="nav-link">
+                        <i class="fas fa-check-circle nav-icon"></i>
+                        준수성 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/enhanced-document-generation" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        서류 생성
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/nutrition-label" class="nav-link">
+                        <i class="fas fa-tags nav-icon"></i>
+                        라벨 생성
+                    </a>
+                </div>
+            </nav>
         </div>
-    </nav>
-
-    <div class="container">
         <div class="main-content">
-            <div class="row">
-                <div class="col-12">
-                    <h1 class="text-center mb-4">
-                        <i class="fas fa-search me-3"></i>
-                        통관 거부사례 분석
-                    </h1>
-                    <p class="text-center text-muted mb-4">
-                        AI가 과거 통관 거부사례를 분석하여 유사한 사례를 찾아드립니다
-                    </p>
+            <div class="header">
+                <div class="header-overlay"></div>
+                <div class="header-content">
+                    <img src="/static/이지트랙스.png" alt="이지트랙스 로고" class="header-logo">
+                    <div class="header-title">통관 분석</div>
+                    <div class="header-desc">수출입 통관 거부사례 및 유사사례를 분석합니다</div>
                 </div>
             </div>
 
@@ -198,6 +391,20 @@
                                 </button>
                             </div>
                         </form>
+                        
+                        <!-- 강화된 키워드 확장 토글 -->
+                        <div class="enhanced-toggle">
+                            <label for="enhancedExpansion">
+                                <i class="fas fa-magic me-2"></i>
+                                강화된 키워드 확장 사용
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enhancedExpansion" checked>
+                                <label class="form-check-label" for="enhancedExpansion">
+                                    동의어, 제품 카테고리, HS 코드, 단어 유사도를 활용한 확장 검색
+                                </label>
+                            </div>
+                        </div>
                         
                         <!-- 예시 검색어 -->
                         <div class="example-queries">
@@ -277,13 +484,19 @@
             document.getElementById('errorSection').style.display = 'none';
             document.getElementById('loadingSection').style.display = 'block';
             
+            // 강화된 키워드 확장 사용 여부 확인
+            const useEnhancedExpansion = document.getElementById('enhancedExpansion').checked;
+            
             // API 호출
             fetch('/api/customs-analysis', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({ 
+                    query: query,
+                    use_enhanced_expansion: useEnhancedExpansion
+                })
             })
             .then(response => response.json())
             .then(data => {
@@ -293,7 +506,7 @@
                     document.getElementById('errorMessage').textContent = data.error;
                     document.getElementById('errorSection').style.display = 'block';
                 } else {
-                    displayResults(data.results);
+                    displayResults(data.results, data.keyword_expansion, data.target_country, data.filtered_by_country);
                     document.getElementById('resultsSection').style.display = 'block';
                 }
             })
@@ -304,9 +517,58 @@
             });
         });
 
-        function displayResults(results) {
+        function displayResults(results, keywordExpansion, targetCountry, filteredByCountry) {
             const container = document.getElementById('resultsContainer');
             container.innerHTML = '';
+            
+            // 국가별 필터링 정보 표시
+            if (filteredByCountry && targetCountry) {
+                const countryFilterSection = document.createElement('div');
+                countryFilterSection.className = 'alert alert-info';
+                countryFilterSection.innerHTML = `
+                    <i class="fas fa-filter me-2"></i>
+                    <strong>${targetCountry}</strong> 거부사례만 필터링하여 표시합니다.
+                `;
+                container.appendChild(countryFilterSection);
+            }
+            
+            // 키워드 확장 정보 표시
+            if (keywordExpansion && keywordExpansion.expansions) {
+                const expansionSection = document.createElement('div');
+                expansionSection.className = 'keyword-expansion-section';
+                expansionSection.innerHTML = `
+                    <h5><i class="fas fa-magic me-2"></i>키워드 확장 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="expansion-method">
+                                <h6><i class="fas fa-synonyms me-2"></i>동의어 확장</h6>
+                                <div class="expansion-words">${keywordExpansion.expansions.synonyms?.words?.slice(0, 8).join(', ') || '확장 없음'}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="expansion-method">
+                                <h6><i class="fas fa-tags me-2"></i>제품 카테고리</h6>
+                                <div class="expansion-words">${keywordExpansion.expansions.categories?.words?.slice(0, 8).join(', ') || '확장 없음'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="expansion-method">
+                                <h6><i class="fas fa-barcode me-2"></i>HS 코드 연관</h6>
+                                <div class="expansion-words">${keywordExpansion.expansions.hs_codes?.words?.slice(0, 8).join(', ') || '확장 없음'}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="expansion-method">
+                                <h6><i class="fas fa-link me-2"></i>단어 유사도</h6>
+                                <div class="expansion-words">${keywordExpansion.expansions.similarity?.words?.slice(0, 8).join(', ') || '확장 없음'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(expansionSection);
+            }
             
             results.forEach((result, index) => {
                 const resultCard = document.createElement('div');

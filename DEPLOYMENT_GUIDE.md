@@ -104,3 +104,30 @@ https://kati-customs-helper.onrender.com
 **서비스 유형**: Web Service  
 **플랫폼**: Render  
 **도메인**: kati-customs-helper.onrender.com 
+
+## ✅ **수정 완료!**
+
+### **이제 Render에서 해야 할 일:**
+
+1. **Render 대시보드에서 서비스 설정으로 이동**
+2. **Environment 섹션에서 다음 설정을 직접 입력:**
+
+```
+Build Command: pip install -r requirements.txt
+Start Command: gunicorn app:app
+Environment: Python 3
+```
+
+3. **"Save Changes" 클릭**
+4. **"Manual Deploy" 클릭**
+
+### **또는 더 간단한 방법:**
+
+Render에서 **"Settings"** 탭으로 이동해서:
+- **Build Command**를 `pip install -r requirements.txt`로 설정
+- **Start Command**를 `gunicorn app:app`로 설정
+- **Environment**를 `Python 3`로 설정
+
+이제 Python 프로젝트로 올바르게 인식되어 배포가 성공할 것입니다! 예
+
+Render에서 설정을 변경하고 다시 배포해보세요! 

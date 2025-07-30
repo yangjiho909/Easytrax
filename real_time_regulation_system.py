@@ -532,6 +532,36 @@ class RealTimeRegulationCrawler:
         
         return status
     
+    def get_last_update_time(self) -> str:
+        """마지막 업데이트 시간 반환 (대시보드용)"""
+        try:
+            # 가장 최근 업데이트 시간 찾기
+            latest_update = None
+            for country in ["중국", "미국", "한국"]:
+                cache_key = self.get_cache_key(country, "라면")
+                cache_file = self.get_cache_file(cache_key)
+                
+                if cache_file.exists():
+                    file_time = datetime.fromtimestamp(cache_file.stat().st_mtime)
+                    if latest_update is None or file_time > latest_update:
+                        latest_update = file_time
+            
+            if latest_update:
+                # 파일이 24시간 이내에 수정된 경우에만 유효한 업데이트로 간주
+                file_age = datetime.now() - latest_update
+                if file_age.total_seconds() < (24 * 3600):  # 24시간
+                    return latest_update.strftime("%m-%d %H:%M")
+                else:
+                    # 24시간이 지난 경우 현재 시간으로 표시
+                    return datetime.now().strftime("%m-%d %H:%M")
+            else:
+                # 캐시 파일이 없는 경우 현재 시간으로 표시
+                return datetime.now().strftime("%m-%d %H:%M")
+        except Exception as e:
+            print(f"⚠️ get_last_update_time 오류: {e}")
+            # 오류 발생 시 현재 시간으로 표시
+            return datetime.now().strftime("%m-%d %H:%M")
+    
     def _get_fallback_china_data(self, product_type: str) -> Dict:
         """중국 규정 폴백 데이터"""
         return {

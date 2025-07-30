@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개선된 서류 생성 - 나만의 통관 수출 도우미</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        .form-section h5 {
+            color: #495057;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .required-field {
+            border-left: 4px solid #dc3545;
+        }
+        .optional-field {
+            border-left: 4px solid #28a745;
+        }
+        .field-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .field-help {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .document-preview {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+        }
+        .validation-error {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 5px;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 사이드바 -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">
+                                <i class="fas fa-home"></i> 홈
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="fas fa-chart-bar"></i> 대시보드
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/customs-analysis">
+                                <i class="fas fa-search"></i> 통관 분석
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/document-generation">
+                                <i class="fas fa-file-pdf"></i> 서류 생성
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/compliance-analysis">
+                                <i class="fas fa-check-circle"></i> 준수성 분석
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/nutrition-label">
+                                <i class="fas fa-tag"></i> 라벨 생성
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- 메인 콘텐츠 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="fas fa-file-pdf text-primary"></i>
+                        개선된 서류 생성 시스템
+                    </h1>
+                </div>
+
+                <!-- 알림 메시지 -->
+                <div id="alertContainer"></div>
+
+                <!-- 기본 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-info-circle"></i> 기본 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">국가 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="country" required>
+                                    <option value="">국가를 선택하세요</option>
+                                    <option value="중국">중국</option>
+                                    <option value="미국">미국</option>
+                                    <option value="일본">일본</option>
+                                    <option value="유럽">유럽</option>
+                                </select>
+                                <div class="field-help">수출 대상 국가를 선택하세요</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">생성할 서류 <span class="text-danger">*</span></label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="commercialInvoice" checked>
+                                    <label class="form-check-label" for="commercialInvoice">
+                                        상업송장 (Commercial Invoice)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="packingList" checked>
+                                    <label class="form-check-label" for="packingList">
+                                        포장명세서 (Packing List)
+                                    </label>
+                                </div>
+                                <div class="field-help">생성할 서류를 선택하세요</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 판매자 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-building"></i> 판매자 정보 (Shipper/Seller)</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">회사명 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="sellerCompany" required>
+                                <div class="field-help">예: 한국식품공업(주)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">사업자등록번호</label>
+                                <input type="text" class="form-control optional-field" id="sellerBusinessNumber">
+                                <div class="field-help">예: 123-45-67890</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label field-label">주소 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="sellerAddress" required>
+                                <div class="field-help">예: 서울시 강남구 테헤란로 123</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">전화번호</label>
+                                <input type="tel" class="form-control optional-field" id="sellerPhone">
+                                <div class="field-help">예: 02-1234-5678</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">이메일</label>
+                                <input type="email" class="form-control optional-field" id="sellerEmail">
+                                <div class="field-help">예: info@company.co.kr</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">담당자</label>
+                                <input type="text" class="form-control optional-field" id="sellerContact">
+                                <div class="field-help">예: 홍길동</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 구매자 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-user"></i> 구매자 정보 (Consignee/Buyer)</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">회사명 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="buyerCompany" required>
+                                <div class="field-help">예: ABC Trading Co., Ltd.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">사업자등록번호</label>
+                                <input type="text" class="form-control optional-field" id="buyerBusinessNumber">
+                                <div class="field-help">구매자 사업자등록번호</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label field-label">주소 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="buyerAddress" required>
+                                <div class="field-help">예: 123 Main Street, New York, NY 10001</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">전화번호</label>
+                                <input type="tel" class="form-control optional-field" id="buyerPhone">
+                                <div class="field-help">예: +1-555-123-4567</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">이메일</label>
+                                <input type="email" class="form-control optional-field" id="buyerEmail">
+                                <div class="field-help">예: contact@abctrading.com</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">담당자</label>
+                                <input type="text" class="form-control optional-field" id="buyerContact">
+                                <div class="field-help">예: John Smith</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제품 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-box"></i> 제품 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">제품명 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="productName" required>
+                                <div class="field-help">예: 신라면, 김치, 전자제품</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">HS코드</label>
+                                <input type="text" class="form-control optional-field" id="hsCode" placeholder="예: 1902.30">
+                                <div class="field-help">국제통일상품분류코드</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">수량 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control required-field" id="quantity" required min="1">
+                                <div class="field-help">예: 1000</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">단위</label>
+                                <select class="form-select optional-field" id="unit">
+                                    <option value="개">개</option>
+                                    <option value="박스">박스</option>
+                                    <option value="kg">kg</option>
+                                    <option value="g">g</option>
+                                    <option value="L">L</option>
+                                    <option value="ml">ml</option>
+                                    <option value="쌍">쌍</option>
+                                    <option value="세트">세트</option>
+                                </select>
+                                <div class="field-help">수량 단위</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">단가 (USD) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control required-field" id="unitPrice" required min="0" step="0.01">
+                                <div class="field-help">예: 2.50</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">순중량 (kg)</label>
+                                <input type="number" class="form-control optional-field" id="netWeight" min="0" step="0.01">
+                                <div class="field-help">제품 순수 무게</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">총중량 (kg)</label>
+                                <input type="number" class="form-control optional-field" id="grossWeight" min="0" step="0.01">
+                                <div class="field-help">포장 포함 총 무게</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">용적 (CBM)</label>
+                                <input type="number" class="form-control optional-field" id="volume" min="0" step="0.01">
+                                <div class="field-help">예: 2.5</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">원산지</label>
+                                <input type="text" class="form-control optional-field" id="origin" value="KOREA">
+                                <div class="field-help">예: KOREA</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">포장 개수</label>
+                                <input type="number" class="form-control optional-field" id="packageCount" min="1">
+                                <div class="field-help">예: 50박스</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">포장 마크</label>
+                                <input type="text" class="form-control optional-field" id="packageMarks" value="MADE IN KOREA">
+                                <div class="field-help">예: MADE IN KOREA</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label field-label">제품 상세 설명</label>
+                                <textarea class="form-control optional-field" id="productDescription" rows="3"></textarea>
+                                <div class="field-help">제품의 상세한 설명을 입력하세요</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 운송 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-ship"></i> 운송 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">선적항 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="portOfLoading" required>
+                                <div class="field-help">예: BUSAN, KOREA</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">도착항 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control required-field" id="portOfArrival" required>
+                                <div class="field-help">예: SHANGHAI, CHINA</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">운송조건</label>
+                                <select class="form-select optional-field" id="incoterms">
+                                    <option value="FOB">FOB (Free On Board)</option>
+                                    <option value="CIF">CIF (Cost, Insurance and Freight)</option>
+                                    <option value="CFR">CFR (Cost and Freight)</option>
+                                    <option value="EXW">EXW (Ex Works)</option>
+                                    <option value="DDP">DDP (Delivered Duty Paid)</option>
+                                </select>
+                                <div class="field-help">국제무역조건</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">운송 방식</label>
+                                <select class="form-select optional-field" id="transportMode">
+                                    <option value="SEA">해상운송 (SEA)</option>
+                                    <option value="AIR">항공운송 (AIR)</option>
+                                    <option value="LAND">육상운송 (LAND)</option>
+                                </select>
+                                <div class="field-help">운송 방식을 선택하세요</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label field-label">포장 타입</label>
+                                <select class="form-select optional-field" id="packageType">
+                                    <option value="Carton">Carton (카톤)</option>
+                                    <option value="Pallet">Pallet (팔레트)</option>
+                                    <option value="Container">Container (컨테이너)</option>
+                                    <option value="Bulk">Bulk (벌크)</option>
+                                </select>
+                                <div class="field-help">포장 타입을 선택하세요</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결제 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-credit-card"></i> 결제 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">결제방법</label>
+                                <select class="form-select optional-field" id="paymentTerms">
+                                    <option value="L/C">L/C (신용장)</option>
+                                    <option value="T/T">T/T (전신환)</option>
+                                    <option value="D/P">D/P (인수도조건)</option>
+                                    <option value="D/A">D/A (인수도조건)</option>
+                                    <option value="O/A">O/A (계산서)</option>
+                                </select>
+                                <div class="field-help">결제 방법을 선택하세요</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label field-label">통화</label>
+                                <select class="form-select optional-field" id="currency">
+                                    <option value="USD">USD (미국 달러)</option>
+                                    <option value="EUR">EUR (유로)</option>
+                                    <option value="CNY">CNY (중국 위안)</option>
+                                    <option value="JPY">JPY (일본 엔)</option>
+                                    <option value="KRW">KRW (한국 원)</option>
+                                </select>
+                                <div class="field-help">결제 통화를 선택하세요</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 상세 포장 정보 섹션 -->
+                <div class="form-section">
+                    <h5><i class="fas fa-boxes"></i> 상세 포장 정보</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label field-label">포장단위</label>
+                                <input type="text" class="form-control optional-field" id="packingUnit" placeholder="예: 20개/박스">
+                                <div class="field-help">박스당 제품 수량</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label field-label">박스크기 (cm)</label>
+                                <input type="text" class="form-control optional-field" id="boxSize" placeholder="예: 40x30x20">
+                                <div class="field-help">가로x세로x높이</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label field-label">박스중량 (kg)</label>
+                                <input type="number" class="form-control optional-field" id="boxWeight" min="0" step="0.01">
+                                <div class="field-help">박스당 무게</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label field-label">총박스수</label>
+                                <input type="number" class="form-control optional-field" id="totalBoxes" min="1">
+                                <div class="field-help">총 박스 개수</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 생성 버튼 -->
+                <div class="text-center mb-4">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="generateDocuments()">
+                        <i class="fas fa-file-pdf"></i> 서류 생성
+                    </button>
+                </div>
+
+                <!-- 결과 표시 영역 -->
+                <div id="resultContainer" style="display: none;">
+                    <div class="success-message">
+                        <h5><i class="fas fa-check-circle"></i> 서류 생성 완료!</h5>
+                        <p>요청하신 서류가 성공적으로 생성되었습니다.</p>
+                    </div>
+                    <div id="generatedFiles"></div>
+                </div>
+
+                <!-- 로딩 스피너 -->
+                <div class="loading-spinner text-center" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">생성 중...</span>
+                    </div>
+                    <p class="mt-2">서류를 생성하는 중...</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 서류 생성 함수
+        async function generateDocuments() {
+            // 필수 필드 검증
+            if (!validateRequiredFields()) {
+                return;
+            }
+
+            // 데이터 수집
+            const formData = collectFormData();
+            
+            // 로딩 시작
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            loadingSpinner.style.display = 'block';
+            resultContainer.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/document-generation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    showAlert('서류 생성에 실패했습니다: ' + (result.error || '알 수 없는 오류'), 'danger');
+                }
+            } catch (error) {
+                showAlert('서류 생성 중 오류가 발생했습니다: ' + error.message, 'danger');
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // 필수 필드 검증
+        function validateRequiredFields() {
+            const requiredFields = [
+                'country', 'sellerCompany', 'sellerAddress', 
+                'buyerCompany', 'buyerAddress', 'productName', 
+                'quantity', 'unitPrice', 'portOfLoading', 'portOfArrival'
+            ];
+
+            let isValid = true;
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            // 서류 선택 확인
+            const commercialInvoice = document.getElementById('commercialInvoice');
+            const packingList = document.getElementById('packingList');
+            if (!commercialInvoice.checked && !packingList.checked) {
+                showAlert('최소 하나의 서류를 선택해야 합니다.', 'warning');
+                return false;
+            }
+
+            return isValid;
+        }
+
+        // 폼 데이터 수집
+        function collectFormData() {
+            const selectedDocuments = [];
+            if (document.getElementById('commercialInvoice').checked) {
+                selectedDocuments.push('상업송장');
+            }
+            if (document.getElementById('packingList').checked) {
+                selectedDocuments.push('포장명세서');
+            }
+
+            return {
+                country: document.getElementById('country').value,
+                company_info: {
+                    name: document.getElementById('sellerCompany').value,
+                    business_number: document.getElementById('sellerBusinessNumber').value,
+                    address: document.getElementById('sellerAddress').value,
+                    phone: document.getElementById('sellerPhone').value,
+                    email: document.getElementById('sellerEmail').value,
+                    contact: document.getElementById('sellerContact').value
+                },
+                buyer_info: {
+                    name: document.getElementById('buyerCompany').value,
+                    business_number: document.getElementById('buyerBusinessNumber').value,
+                    address: document.getElementById('buyerAddress').value,
+                    phone: document.getElementById('buyerPhone').value,
+                    email: document.getElementById('buyerEmail').value,
+                    contact: document.getElementById('buyerContact').value
+                },
+                product_info: {
+                    name: document.getElementById('productName').value,
+                    hs_code: document.getElementById('hsCode').value,
+                    quantity: parseInt(document.getElementById('quantity').value),
+                    unit: document.getElementById('unit').value,
+                    unit_price: parseFloat(document.getElementById('unitPrice').value),
+                    net_weight: parseFloat(document.getElementById('netWeight').value) || 0,
+                    gross_weight: parseFloat(document.getElementById('grossWeight').value) || 0,
+                    volume: parseFloat(document.getElementById('volume').value) || 0,
+                    origin: document.getElementById('origin').value,
+                    package_count: parseInt(document.getElementById('packageCount').value) || 0,
+                    package_marks: document.getElementById('packageMarks').value,
+                    description: document.getElementById('productDescription').value
+                },
+                transport_info: {
+                    port_of_loading: document.getElementById('portOfLoading').value,
+                    port_of_arrival: document.getElementById('portOfArrival').value,
+                    incoterms: document.getElementById('incoterms').value,
+                    mode: document.getElementById('transportMode').value,
+                    package_type: document.getElementById('packageType').value
+                },
+                payment_info: {
+                    payment_terms: document.getElementById('paymentTerms').value,
+                    currency: document.getElementById('currency').value
+                },
+                packing_details: {
+                    packing_unit: document.getElementById('packingUnit').value,
+                    box_size: document.getElementById('boxSize').value,
+                    box_weight: parseFloat(document.getElementById('boxWeight').value) || 0,
+                    total_boxes: parseInt(document.getElementById('totalBoxes').value) || 0
+                },
+                selected_documents: selectedDocuments
+            };
+        }
+
+        // 결과 표시
+        function displayResults(result) {
+            const resultContainer = document.getElementById('resultContainer');
+            const generatedFiles = document.getElementById('generatedFiles');
+            
+            resultContainer.style.display = 'block';
+            
+            if (result.pdf_files) {
+                let filesHtml = '<div class="row">';
+                Object.entries(result.pdf_files).forEach(([docName, filename]) => {
+                    filesHtml += `
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">${docName}</h6>
+                                    <p class="card-text">
+                                        <i class="fas fa-file-pdf text-danger"></i> 
+                                        ${filename}
+                                    </p>
+                                    <a href="/generated_documents/${filename}" 
+                                       class="btn btn-primary btn-sm" 
+                                       target="_blank">
+                                        <i class="fas fa-download"></i> 다운로드
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                filesHtml += '</div>';
+                generatedFiles.innerHTML = filesHtml;
+            }
+        }
+
+        // 알림 메시지 표시
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 기본값 설정
+            document.getElementById('origin').value = 'KOREA';
+            document.getElementById('transportMode').value = 'SEA';
+            document.getElementById('packageType').value = 'Carton';
+        });
+    </script>
+</body>
+</html> 

@@ -13,20 +13,150 @@
             --accent-color: #e74c3c;
             --success-color: #27ae60;
             --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
         }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
             min-height: 100vh;
         }
         
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
         .main-content {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 2rem 0;
-            padding: 2rem;
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: url('/static/세계로.jpg') center center/cover no-repeat;
+            padding: var(--spacing-xxl) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            min-height: 220px;
+        }
+        .header-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44,62,80,0.45);
+            border-radius: var(--border-radius-lg);
+            z-index: 1;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+        }
+        .header-logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(44,62,80,0.3);
+        }
+        .header-desc {
+            font-size: 1.25rem;
+            color: #e0e6ed;
+            text-shadow: 0 1px 4px rgba(44,62,80,0.2);
+        }
+        
+        /* 사이드바 네비게이션 스타일 */
+        .nav-link {
+            color: #e0e6ed !important;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff !important;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: #fff !important;
+            font-weight: 600;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
         }
         
         .navbar-brand {
@@ -88,37 +218,66 @@
             height: 3rem;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 네비게이션 바 -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-asia me-2"></i>
-                나만의 통관 수출 도우미
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/customs-analysis">통관 분석</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/regulation-info">규제 정보</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
-                    </li>
-                </ul>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
             </div>
+            
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        대시보드
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/customs-analysis" class="nav-link">
+                        <i class="fas fa-search nav-icon"></i>
+                        통관 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/regulation-info" class="nav-link active">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        규제 정보
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/compliance-analysis" class="nav-link">
+                        <i class="fas fa-check-circle nav-icon"></i>
+                        준수성 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/enhanced-document-generation" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        서류 생성
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/nutrition-label" class="nav-link">
+                        <i class="fas fa-tags nav-icon"></i>
+                        라벨 생성
+                    </a>
+                </div>
+            </nav>
         </div>
-    </nav>
-
-    <div class="container">
         <div class="main-content">
+            <div class="header">
+                <div class="header-overlay"></div>
+                <div class="header-content">
+                    <img src="/static/이지트랙스.png" alt="이지트랙스 로고" class="header-logo">
+                    <div class="header-title">규제 정보</div>
+                    <div class="header-desc">국가별 최신 수출입 규제 정보를 제공합니다</div>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-12">
                     <h1 class="text-center mb-4">

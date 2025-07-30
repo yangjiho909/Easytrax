@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>규제 준수성 분석 - 이지트랙스</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: url('/static/세계로.jpg') center center/cover no-repeat;
+            padding: var(--spacing-xxl) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            min-height: 220px;
+        }
+        .header-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44,62,80,0.45);
+            border-radius: var(--border-radius-lg);
+            z-index: 1;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+        }
+        
+        .card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: none;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0 !important;
+            padding: var(--spacing-lg);
+            border: none;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-sm) var(--spacing-xl);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .nav-icon {
+            margin-right: var(--spacing-sm);
+            width: 20px;
+        }
+        
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            margin: 0 auto 1rem;
+        }
+        
+        .score-excellent {
+            background: linear-gradient(135deg, var(--success-color) 0%, #2ecc71 100%);
+        }
+        
+        .score-good {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #f1c40f 100%);
+        }
+        
+        .score-poor {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #c0392b 100%);
+        }
+        
+        .result-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: var(--spacing-xxl);
+        }
+        
+        .alert {
+            border-radius: var(--border-radius-md);
+            border: none;
+        }
+        
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .alert-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .alert-info {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+        }
+        
+        .alert-success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
+            </div>
+            
+            <nav class="nav flex-column">
+                <a class="nav-link" href="/dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    대시보드
+                </a>
+                <a class="nav-link" href="/customs-analysis">
+                    <i class="fas fa-search"></i>
+                    통관 분석
+                </a>
+                <a class="nav-link" href="/regulation-info">
+                    <i class="fas fa-info-circle"></i>
+                    규제 정보
+                </a>
+                <a class="nav-link active" href="/compliance-analysis">
+                    <i class="fas fa-check-circle"></i>
+                    준수성 분석
+                </a>
+                                        <a class="nav-link" href="/enhanced-document-generation">
+                    <i class="fas fa-file-alt"></i>
+                    서류 생성
+                </a>
+                <a class="nav-link" href="/nutrition-label">
+                    <i class="fas fa-tags"></i>
+                    라벨 생성
+                </a>
+            </nav>
+        </div>
+        
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 헤더 -->
+            <div class="header">
+                <div class="header-overlay"></div>
+                <div class="header-content">
+                    <div class="header-desc">전세계 수출입 통관, 이지하게 트래킹하세요!</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        규제 준수성 분석
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        귀사의 제품 정보와 준비 서류를 규제 정보와 비교 분석합니다
+                    </div>
+                    
+                    <!-- 분석 폼 -->
+                    <form id="complianceForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="country" class="form-label">수출 대상국</label>
+                                <select class="form-select" id="country" required>
+                                    <option value="">국가를 선택하세요</option>
+                                    <option value="중국">🇨🇳 중국</option>
+                                    <option value="미국">🇺🇸 미국</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="companyName" class="form-label">회사명</label>
+                                <input type="text" class="form-control" id="companyName" placeholder="회사명을 입력하세요" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="productName" class="form-label">제품명</label>
+                                <input type="text" class="form-control" id="productName" placeholder="제품명을 입력하세요" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="productQuantity" class="form-label">수량</label>
+                                <input type="number" class="form-control" id="productQuantity" placeholder="수량을 입력하세요" required>
+                            </div>
+                        </div>
+                        
+                        <!-- 문서 업로드 -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-upload me-2"></i>
+                                문서 업로드 (OCR 분석)
+                            </h5>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                AI가 업로드된 문서를 분석하여 규제 준수성을 자동으로 검사합니다.
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="labelFile" class="form-label">라벨 이미지/PDF</label>
+                                        <input type="file" class="form-control" id="labelFile" accept=".jpg,.jpeg,.png,.pdf">
+                                        <div class="form-text">제품 라벨 이미지 또는 PDF 파일</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="nutritionFile" class="form-label">영양성분표</label>
+                                        <input type="file" class="form-control" id="nutritionFile" accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls">
+                                        <div class="form-text">영양성분표 이미지, PDF 또는 엑셀 파일</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="ingredientFile" class="form-label">원료리스트</label>
+                                        <input type="file" class="form-control" id="ingredientFile" accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.docx,.doc">
+                                        <div class="form-text">원료리스트 이미지, PDF, 엑셀 또는 워드 파일</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sanitationFile" class="form-label">위생증명서</label>
+                                        <input type="file" class="form-control" id="sanitationFile" accept=".jpg,.jpeg,.png,.pdf">
+                                        <div class="form-text">위생증명서 이미지 또는 PDF 파일</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="originFile" class="form-label">원산지증명서</label>
+                                        <input type="file" class="form-control" id="originFile" accept=".jpg,.jpeg,.png,.pdf">
+                                        <div class="form-text">원산지증명서 이미지 또는 PDF 파일</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="otherFile" class="form-label">기타 문서</label>
+                                        <input type="file" class="form-control" id="otherFile" accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.docx,.doc">
+                                        <div class="form-text">기타 관련 문서</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="useOCR" checked>
+                                    <label class="form-check-label" for="useOCR">
+                                        <strong>AI OCR 분석 사용</strong> - 업로드된 문서에서 자동으로 정보를 추출하여 분석합니다
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 준비된 서류 (수동 체크) -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-file-alt me-2"></i>
+                                준비된 서류 (수동 확인)
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="doc1" value="상업송장 (Commercial Invoice)">
+                                        <label class="form-check-label" for="doc1">상업송장 (Commercial Invoice)</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="doc2" value="포장명세서 (Packing List)">
+                                        <label class="form-check-label" for="doc2">포장명세서 (Packing List)</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="doc3" value="원산지증명서 (Certificate of Origin)">
+                                        <label class="form-check-label" for="doc3">원산지증명서 (Certificate of Origin)</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="doc4" value="위생증명서 (Health Certificate)">
+                                        <label class="form-check-label" for="doc4">위생증명서 (Health Certificate)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 라벨링 정보 -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-tags me-2"></i>
+                                라벨링 정보
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label1" value="has_nutrition_label">
+                                        <label class="form-check-label" for="label1">영양성분표 포함</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label2" value="has_allergy_info">
+                                        <label class="form-check-label" for="label2">알레르기 정보 표기</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label3" value="has_expiry_date">
+                                        <label class="form-check-label" for="label3">유통기한 표기</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label4" value="has_ingredients">
+                                        <label class="form-check-label" for="label4">성분표 포함</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label5" value="has_storage_info">
+                                        <label class="form-check-label" for="label5">보관방법 표기</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="label6" value="has_manufacturer_info">
+                                        <label class="form-check-label" for="label6">제조사 정보 포함</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search me-2"></i>
+                                준수성 분석하기
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- 로딩 섹션 -->
+                    <div id="loadingSection" class="loading" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">규제 준수성을 분석하고 있습니다...</p>
+                    </div>
+                    
+                    <!-- 오류 섹션 -->
+                    <div id="errorSection" class="alert alert-danger" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+                    
+                    <!-- 결과 섹션 -->
+                    <div id="resultsSection" style="display: none;">
+                        <div class="result-card">
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    <div id="scoreCircle" class="score-circle"></div>
+                                    <h4 id="complianceStatus"></h4>
+                                    <p class="text-muted">전체 준수도</p>
+                                </div>
+                                <div class="col-md-8">
+                                    <h3 class="mb-3">분석 결과</h3>
+                                    <div id="analysisDetails"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('complianceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 폼 데이터 수집
+            const formData = new FormData();
+            
+            // 기본 정보
+            formData.append('country', document.getElementById('country').value);
+            formData.append('product_type', '식품'); // 기본값
+            formData.append('company_info', JSON.stringify({
+                name: document.getElementById('companyName').value
+            }));
+            formData.append('product_info', JSON.stringify({
+                name: document.getElementById('productName').value,
+                quantity: document.getElementById('productQuantity').value
+            }));
+            
+            // 파일 업로드 처리
+            const fileInputs = [
+                { id: 'labelFile', type: '라벨' },
+                { id: 'nutritionFile', type: '영양성분표' },
+                { id: 'ingredientFile', type: '원료리스트' },
+                { id: 'sanitationFile', type: '위생증명서' },
+                { id: 'originFile', type: '원산지증명서' },
+                { id: 'otherFile', type: '기타문서' }
+            ];
+            
+            let uploadedDocuments = [];
+            
+            fileInputs.forEach(input => {
+                const fileInput = document.getElementById(input.id);
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    formData.append(input.id, file);
+                    uploadedDocuments.push({
+                        type: input.type,
+                        filename: file.name,
+                        size: file.size
+                    });
+                }
+            });
+            
+            formData.append('uploaded_documents', JSON.stringify(uploadedDocuments));
+            
+            // 준비된 서류 수집 (수동 체크)
+            const docCheckboxes = document.querySelectorAll('input[type="checkbox"][value^="상업송장"], input[type="checkbox"][value^="포장명세서"], input[type="checkbox"][value^="원산지증명서"], input[type="checkbox"][value^="위생증명서"]');
+            const preparedDocuments = [];
+            docCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    preparedDocuments.push(checkbox.value);
+                }
+            });
+            formData.append('prepared_documents', JSON.stringify(preparedDocuments));
+            
+            // 라벨링 정보 수집
+            const labelCheckboxes = document.querySelectorAll('input[type="checkbox"][value^="has_"]');
+            const labelingInfo = {};
+            labelCheckboxes.forEach(checkbox => {
+                labelingInfo[checkbox.value] = checkbox.checked;
+            });
+            formData.append('labeling_info', JSON.stringify(labelingInfo));
+            
+            // OCR 사용 여부
+            formData.append('use_ocr', document.getElementById('useOCR').checked);
+            
+            // UI 상태 변경
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            
+            // API 호출 (FormData 사용)
+            fetch('/api/compliance-analysis', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorSection').style.display = 'block';
+                } else {
+                    displayResults(data.analysis);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('errorMessage').textContent = '서버 오류가 발생했습니다.';
+                document.getElementById('errorSection').style.display = 'block';
+            });
+        });
+
+        function displayResults(analysis) {
+            // 점수 원형 표시
+            const scoreCircle = document.getElementById('scoreCircle');
+            const score = Math.round(analysis.overall_score);
+            
+            if (score >= 80) {
+                scoreCircle.className = 'score-circle score-excellent';
+            } else if (score >= 60) {
+                scoreCircle.className = 'score-circle score-good';
+            } else {
+                scoreCircle.className = 'score-circle score-poor';
+            }
+            
+            scoreCircle.textContent = score + '%';
+            
+            // 준수 상태
+            document.getElementById('complianceStatus').textContent = analysis.compliance_status;
+            
+            // 분석 상세 내용
+            const analysisDetails = document.getElementById('analysisDetails');
+            let detailsHtml = '';
+            
+            if (analysis.missing_requirements.length > 0) {
+                detailsHtml += '<div class="alert alert-warning"><strong>❌ 부족한 서류:</strong><br>';
+                analysis.missing_requirements.forEach(req => {
+                    detailsHtml += `• ${req}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            if (analysis.critical_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-danger"><strong>🚨 긴급 개선사항:</strong><br>';
+                analysis.critical_issues.forEach(issue => {
+                    detailsHtml += `• ${issue}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            if (analysis.minor_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-info"><strong>⚠️ 권장 개선사항:</strong><br>';
+                analysis.minor_issues.forEach(issue => {
+                    detailsHtml += `• ${issue}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            if (analysis.improvement_suggestions.length > 0) {
+                detailsHtml += '<div class="alert alert-success"><strong>💡 개선 방안:</strong><br>';
+                analysis.improvement_suggestions.forEach(suggestion => {
+                    detailsHtml += `${suggestion}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            analysisDetails.innerHTML = detailsHtml;
+        }
+    </script>
+</body>
+</html> 

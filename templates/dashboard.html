@@ -1,0 +1,548 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 통관 수출 도우미 - 대시보드</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: url('/static/세계로.jpg') center center/cover no-repeat;
+            padding: var(--spacing-xxl) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            min-height: 220px;
+        }
+        .header-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44,62,80,0.45);
+            border-radius: var(--border-radius-lg);
+            z-index: 1;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+        }
+        .header-logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(44,62,80,0.3);
+        }
+        .header-desc {
+            font-size: 1.25rem;
+            color: #e0e6ed;
+            text-shadow: 0 1px 4px rgba(44,62,80,0.2);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .stat-card {
+            background: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--success-color);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .stat-card.accent {
+            border-left-color: var(--accent-color);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .stat-flags {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+            gap: var(--spacing-sm);
+        }
+        
+        .stat-flags span {
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-flags span:hover {
+            transform: scale(1.2);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-small);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .action-card {
+            background: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        
+        .action-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .recent-activity {
+            background: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: var(--spacing-md);
+        }
+        
+        .nav-item {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .nav-icon {
+            margin-right: var(--spacing-sm);
+            width: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
+            </div>
+            
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="/" class="nav-link active">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        대시보드
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/customs-analysis" class="nav-link">
+                        <i class="fas fa-search nav-icon"></i>
+                        통관 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/regulation-info" class="nav-link">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        규제 정보
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/compliance-analysis" class="nav-link">
+                        <i class="fas fa-check-circle nav-icon"></i>
+                        준수성 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/enhanced-document-generation" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        서류 생성
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/nutrition-label" class="nav-link">
+                        <i class="fas fa-tags nav-icon"></i>
+                        라벨 생성
+                    </a>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 헤더 -->
+            <div class="header">
+                <div class="header-overlay"></div>
+                <div class="header-content">
+                    <div class="header-desc">전세계 수출입 통관, 쉽고(Easy) 명확한 경로(Trax)로 관리하세요!</div>
+                </div>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRejectionCases">-</div>
+                    <div class="stat-label">총 거부사례 수</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-flags">
+                        <span style="font-size: 2rem; margin-right: 0.5rem;">🇨🇳</span>
+                        <span style="font-size: 2rem;">🇺🇸</span>
+                    </div>
+                    <div class="stat-label">지원 국가</div>
+                </div>
+                <div class="stat-card accent">
+                    <div class="stat-number" id="regulationUpdateTime">-</div>
+                    <div class="stat-label">규제 업데이트</div>
+                </div>
+            </div>
+            
+            <!-- 빠른 액션 -->
+            <div class="quick-actions">
+                <a href="/customs-analysis" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h5>통관 분석</h5>
+                    <p class="text-muted">거부 사례 분석 및 예방</p>
+                </a>
+                <a href="/regulation-info" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h5>규제 정보</h5>
+                    <p class="text-muted">실시간 규제 업데이트</p>
+                </a>
+                <a href="/compliance-analysis" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h5>준수성 분석</h5>
+                    <p class="text-muted">규제 준수성 검토</p>
+                </a>
+                <a href="/enhanced-document-generation" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h5>서류 생성</h5>
+                    <p class="text-muted">자동 서류 생성</p>
+                </a>
+                <a href="/nutrition-label" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h5>라벨 생성</h5>
+                    <p class="text-muted">영양정보/라벨 자동 생성</p>
+                </a>
+                <a href="/document-extraction" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <h5>문서 추출</h5>
+                    <p class="text-muted">서류 데이터 자동 추출</p>
+                </a>
+            </div>
+            
+            <!-- 최근 활동 -->
+            <div class="recent-activity">
+                <h4 class="mb-3">최근 활동</h4>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">라벨 생성 완료</div>
+                        <small class="text-muted">영양정보 라벨이 생성되었습니다.</small>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">방금 전</small>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">상업송장 생성 완료</div>
+                        <small class="text-muted">중국 수출용 서류가 생성되었습니다.</small>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">2분 전</small>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">통관 분석 완료</div>
+                        <small class="text-muted">라면 수출 거부 사례 분석이 완료되었습니다.</small>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">15분 전</small>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">규제 정보 업데이트</div>
+                        <small class="text-muted">중국 식품 규제 정보가 업데이트되었습니다.</small>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">1시간 전</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 현재 페이지 활성화
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+        
+        // 실시간 통계 업데이트
+        function updateStats() {
+            fetch('/api/dashboard-stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateDashboardStats(data.stats);
+                    }
+                })
+                .catch(error => {
+                    console.error('통계 업데이트 오류:', error);
+                });
+        }
+        
+        // 대시보드 통계 업데이트
+        function updateDashboardStats(stats) {
+            // 통계 카드 업데이트
+            document.getElementById('totalRejectionCases').textContent = stats.total_rejection_cases.toLocaleString();
+            document.getElementById('supportedCountryCount').textContent = stats.supported_country_count;
+            document.getElementById('lastUpdated').textContent = stats.last_updated;
+            document.getElementById('regulationUpdateTime').textContent = stats.regulation_update_time;
+            
+            // 최근 활동 업데이트
+            updateRecentActivities(stats.recent_activities);
+        }
+        
+        // 최근 활동 업데이트
+        function updateRecentActivities(activities) {
+            const activityContainer = document.querySelector('.recent-activity');
+            if (!activityContainer) return;
+            
+            let html = '<h4 class="mb-3">최근 활동</h4>';
+            activities.forEach(activity => {
+                html += `
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">${activity.title}</div>
+                            <small class="text-muted">${activity.description}</small>
+                        </div>
+                        <div class="ms-auto">
+                            <small class="text-muted">${activity.time}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            activityContainer.innerHTML = html;
+        }
+        
+        // 페이지 로드 시 초기 데이터 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+        });
+        
+        // 30초마다 통계 업데이트
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>

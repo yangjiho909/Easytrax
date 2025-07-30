@@ -13,20 +13,150 @@
             --accent-color: #e74c3c;
             --success-color: #27ae60;
             --warning-color: #f39c12;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #6c757d;
+            
+            --font-family: 'Noto Sans KR', sans-serif;
+            --font-size-small: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-large: 1.25rem;
+            --font-size-xlarge: 1.5rem;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            
+            --border-radius-sm: 0.25rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-xl: 1.5rem;
+            
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+            --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
         }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            display: flex;
             min-height: 100vh;
         }
         
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
         .main-content {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 2rem 0;
-            padding: 2rem;
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--spacing-lg);
+        }
+        
+        .header {
+            background: url('/static/세계로.jpg') center center/cover no-repeat;
+            padding: var(--spacing-xxl) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            min-height: 220px;
+        }
+        .header-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44,62,80,0.45);
+            border-radius: var(--border-radius-lg);
+            z-index: 1;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+        }
+        .header-logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(44,62,80,0.3);
+        }
+        .header-desc {
+            font-size: 1.25rem;
+            color: #e0e6ed;
+            text-shadow: 0 1px 4px rgba(44,62,80,0.2);
+        }
+        
+        /* 사이드바 네비게이션 스타일 */
+        .nav-link {
+            color: #e0e6ed !important;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff !important;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: #fff !important;
+            font-weight: 600;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
         }
         
         .navbar-brand {
@@ -143,49 +273,67 @@
             font-weight: 600;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 네비게이션 바 -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-asia me-2"></i>
-                나만의 통관 수출 도우미
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/customs-analysis">통관 분석</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/regulation-info">규제 정보</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/compliance-analysis">준수성 분석</a>
-                    </li>
-                </ul>
+    <div class="dashboard-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="mb-4" style="text-align:center;">
+                <img src="/static/이지트랙스.png" alt="이지트랙스 로고" style="width:90px; height:auto; margin-bottom:0.5rem;">
+                <h3 class="mb-0" style="font-weight:900; letter-spacing:2px; color:#fff;">이지트랙스</h3>
+                <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
             </div>
+            
+            <nav class="nav flex-column">
+                <div class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        대시보드
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/customs-analysis" class="nav-link">
+                        <i class="fas fa-search nav-icon"></i>
+                        통관 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/regulation-info" class="nav-link">
+                        <i class="fas fa-info-circle nav-icon"></i>
+                        규제 정보
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/compliance-analysis" class="nav-link active">
+                        <i class="fas fa-check-circle nav-icon"></i>
+                        준수성 분석
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/enhanced-document-generation" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        서류 생성
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/nutrition-label" class="nav-link">
+                        <i class="fas fa-tags nav-icon"></i>
+                        라벨 생성
+                    </a>
+                </div>
+            </nav>
         </div>
-    </nav>
-
-    <div class="container">
         <div class="main-content">
-            <div class="row">
-                <div class="col-12">
-                    <h1 class="text-center mb-4">
-                        <i class="fas fa-check-circle me-3"></i>
-                        규제 준수성 분석
-                    </h1>
-                    <p class="text-center text-muted mb-4">
-                        귀사의 제품 정보와 준비 서류를 규제 정보와 비교 분석합니다
-                    </p>
+            <div class="header">
+                <div class="header-overlay"></div>
+                <div class="header-content">
+                    <img src="/static/이지트랙스.png" alt="이지트랙스 로고" class="header-logo">
+                    <div class="header-title">준수성 분석</div>
+                    <div class="header-desc">수출입 규제 준수 여부를 자동으로 분석합니다</div>
                 </div>
             </div>
-
-            <!-- 분석 폼 -->
+            <!-- 기존 main-content 이하 내용 -->
             <form id="complianceForm">
                 <div class="form-section">
                     <h3 class="mb-3">
@@ -250,30 +398,96 @@
                         <i class="fas fa-file-alt me-2"></i>
                         준비된 서류
                     </h3>
-                    <div class="checkbox-group">
+                    
+                    <!-- 핵심 필수 서류 -->
+                    <h5 class="text-primary mb-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        핵심 필수 서류
+                    </h5>
+                    <div class="checkbox-group mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc1" value="상업송장">
-                            <label class="form-check-label" for="doc1">상업송장</label>
+                            <input class="form-check-input" type="checkbox" id="doc1" value="상업송장 (Commercial Invoice)">
+                            <label class="form-check-label" for="doc1">상업송장 (Commercial Invoice)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc2" value="포장명세서">
-                            <label class="form-check-label" for="doc2">포장명세서</label>
+                            <input class="form-check-input" type="checkbox" id="doc2" value="포장명세서 (Packing List)">
+                            <label class="form-check-label" for="doc2">포장명세서 (Packing List)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc3" value="원산지증명서">
-                            <label class="form-check-label" for="doc3">원산지증명서</label>
+                            <input class="form-check-input" type="checkbox" id="doc3" value="원산지증명서 (Certificate of Origin)">
+                            <label class="form-check-label" for="doc3">원산지증명서 (Certificate of Origin)</label>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc4" value="위생증명서">
-                            <label class="form-check-label" for="doc4">위생증명서</label>
+                    </div>
+
+                    <!-- 중국 전용 서류 -->
+                    <div id="chinaDocs" style="display: none;">
+                        <h5 class="text-warning mb-2">
+                            <i class="fas fa-flag me-1"></i>
+                            중국 수출 권장 서류
+                        </h5>
+                        <div class="checkbox-group mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc4" value="식품안전인증서 (GB 2760-2014 기준)">
+                                <label class="form-check-label" for="doc4">식품안전인증서 (GB 2760-2014 기준)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc5" value="성분분석서 (방부제, 식품첨가물 함량)">
+                                <label class="form-check-label" for="doc5">성분분석서 (방부제, 식품첨가물 함량)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc6" value="중국어 라벨 (제품명, 성분, 원산지, 유통기한, 보관방법)">
+                                <label class="form-check-label" for="doc6">중국어 라벨 (제품명, 성분, 원산지, 유통기한, 보관방법)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc7" value="알레르기 정보서 (8대 알레르기 원료 포함 여부)">
+                                <label class="form-check-label" for="doc7">알레르기 정보서 (8대 알레르기 원료 포함 여부)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc8" value="영양성분분석서 (100g당 기준)">
+                                <label class="form-check-label" for="doc8">영양성분분석서 (100g당 기준)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc9" value="미생물검사서 (총균수, 대장균군, 황색포도상구균)">
+                                <label class="form-check-label" for="doc9">미생물검사서 (총균수, 대장균군, 황색포도상구균)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc10" value="제조시설 등록증 (한국 제조시설 등록증)">
+                                <label class="form-check-label" for="doc10">제조시설 등록증 (한국 제조시설 등록증)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc11" value="수출신고서 (중국 수입신고서)">
+                                <label class="form-check-label" for="doc11">수출신고서 (중국 수입신고서)</label>
+                            </div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc5" value="FDA등록증">
-                            <label class="form-check-label" for="doc5">FDA등록증</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="doc6" value="중국라벨승인서">
-                            <label class="form-check-label" for="doc6">중국라벨승인서</label>
+                    </div>
+
+                    <!-- 미국 전용 서류 -->
+                    <div id="usDocs" style="display: none;">
+                        <h5 class="text-warning mb-2">
+                            <i class="fas fa-flag me-1"></i>
+                            미국 수출 권장 서류
+                        </h5>
+                        <div class="checkbox-group mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc12" value="FDA 등록증">
+                                <label class="form-check-label" for="doc12">FDA 등록증</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc13" value="식품안전현대화법(FSMA) 준수서류">
+                                <label class="form-check-label" for="doc13">식품안전현대화법(FSMA) 준수서류</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc14" value="알레르기 정보서 (9대 알레르기 원료)">
+                                <label class="form-check-label" for="doc14">알레르기 정보서 (9대 알레르기 원료)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc15" value="영양성분표 (FDA 기준)">
+                                <label class="form-check-label" for="doc15">영양성분표 (FDA 기준)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="doc16" value="위생증명서">
+                                <label class="form-check-label" for="doc16">위생증명서</label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -362,40 +576,113 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 국가 선택에 따른 서류 표시/숨김 처리
+        document.getElementById('country').addEventListener('change', function() {
+            const selectedCountry = this.value;
+            const chinaDocs = document.getElementById('chinaDocs');
+            const usDocs = document.getElementById('usDocs');
+            
+            // 모든 국가별 서류 숨김
+            chinaDocs.style.display = 'none';
+            usDocs.style.display = 'none';
+            
+            // 선택된 국가에 따라 해당 서류 표시
+            if (selectedCountry === '중국') {
+                chinaDocs.style.display = 'block';
+            } else if (selectedCountry === '미국') {
+                usDocs.style.display = 'block';
+            }
+        });
+
         document.getElementById('complianceForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // 폼 데이터 수집
-            const formData = {
-                country: document.getElementById('country').value,
-                company_info: {
-                    name: document.getElementById('companyName').value
-                },
-                product_info: {
-                    name: document.getElementById('productName').value,
-                    nutrition: document.getElementById('nutritionInfo').value,
-                    ingredients: document.getElementById('ingredients').value,
-                    allergy: document.getElementById('allergyInfo').value,
-                    storage: document.getElementById('storageInfo').value,
-                    expiry: document.getElementById('expiryDate').value
-                },
-                prepared_documents: [],
-                labeling_info: {}
+            // FormData 객체 생성
+            const formData = new FormData();
+            
+            // 기본 정보 추가
+            formData.append('country', document.getElementById('country').value);
+            formData.append('product_type', '식품');
+            formData.append('use_ocr', 'true');
+            
+            // 회사 정보
+            const companyInfo = {
+                name: document.getElementById('companyName').value
             };
+            formData.append('company_info', JSON.stringify(companyInfo));
+            
+            // 제품 정보
+            const productInfo = {
+                name: document.getElementById('productName').value,
+                nutrition: document.getElementById('nutritionInfo').value,
+                ingredients: document.getElementById('ingredients').value,
+                allergy: document.getElementById('allergyInfo').value,
+                storage: document.getElementById('storageInfo').value,
+                expiry: document.getElementById('expiryDate').value
+            };
+            formData.append('product_info', JSON.stringify(productInfo));
             
             // 준비된 서류 수집
+            const preparedDocuments = [];
             const docCheckboxes = document.querySelectorAll('input[type="checkbox"][value]:not([value^="has_"])');
             docCheckboxes.forEach(checkbox => {
                 if (checkbox.checked) {
-                    formData.prepared_documents.push(checkbox.value);
+                    preparedDocuments.push(checkbox.value);
                 }
             });
+            formData.append('prepared_documents', JSON.stringify(preparedDocuments));
             
             // 라벨링 정보 수집
+            const labelingInfo = {};
             const labelCheckboxes = document.querySelectorAll('input[type="checkbox"][value^="has_"]');
             labelCheckboxes.forEach(checkbox => {
-                formData.labeling_info[checkbox.value] = checkbox.checked;
+                labelingInfo[checkbox.value] = checkbox.checked;
             });
+            formData.append('labeling_info', JSON.stringify(labelingInfo));
+            
+            // 업로드된 문서 (빈 배열로 초기화)
+            formData.append('uploaded_documents', JSON.stringify([]));
+            
+            // 파일 업로드 처리
+            const fileInputs = {
+                'labelFile': document.getElementById('labelFile'),
+                'nutritionFile': document.getElementById('nutritionFile'),
+                'ingredientFile': document.getElementById('ingredientFile'),
+                'sanitationFile': document.getElementById('sanitationFile'),
+                'originFile': document.getElementById('originFile'),
+                'otherFile': document.getElementById('otherFile')
+            };
+            
+            // 파일 유효성 검사 및 추가
+            let hasValidFiles = false;
+            for (const [key, input] of Object.entries(fileInputs)) {
+                if (input && input.files && input.files[0]) {
+                    const file = input.files[0];
+                    
+                    // 파일 크기 검사 (50MB)
+                    if (file.size > 50 * 1024 * 1024) {
+                        alert(`파일 크기가 너무 큽니다: ${file.name} (50MB 제한)`);
+                        return;
+                    }
+                    
+                    // 파일 형식 검사
+                    const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif', '.docx', '.doc', '.xlsx', '.xls'];
+                    const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                    if (!allowedTypes.includes(fileExt)) {
+                        alert(`지원하지 않는 파일 형식입니다: ${file.name}`);
+                        return;
+                    }
+                    
+                    formData.append(key, file);
+                    hasValidFiles = true;
+                }
+            }
+            
+            // 파일이나 준비된 서류가 없으면 경고
+            if (!hasValidFiles && preparedDocuments.length === 0) {
+                alert('최소 하나의 문서를 업로드하거나 준비된 서류를 선택해주세요.');
+                return;
+            }
             
             // UI 상태 변경
             document.getElementById('resultsSection').style.display = 'none';
@@ -405,12 +692,14 @@
             // API 호출
             fetch('/api/compliance-analysis', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+                body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 document.getElementById('loadingSection').style.display = 'none';
                 
@@ -418,13 +707,14 @@
                     document.getElementById('errorMessage').textContent = data.error;
                     document.getElementById('errorSection').style.display = 'block';
                 } else {
-                    displayResults(data.analysis);
+                    displayResults(data.compliance_analysis || data.analysis);
                     document.getElementById('resultsSection').style.display = 'block';
                 }
             })
             .catch(error => {
                 document.getElementById('loadingSection').style.display = 'none';
-                document.getElementById('errorMessage').textContent = '서버 오류가 발생했습니다.';
+                console.error('API 오류:', error);
+                document.getElementById('errorMessage').textContent = `서버 오류가 발생했습니다: ${error.message}`;
                 document.getElementById('errorSection').style.display = 'block';
             });
         });
@@ -432,11 +722,11 @@
         function displayResults(analysis) {
             // 점수 원형 표시
             const scoreCircle = document.getElementById('scoreCircle');
-            const score = Math.round(analysis.overall_score);
+            const score = Math.round(analysis.overall_score || 0);
             
-            if (score >= 90) {
+            if (score >= 80) {
                 scoreCircle.className = 'score-circle score-excellent';
-            } else if (score >= 70) {
+            } else if (score >= 60) {
                 scoreCircle.className = 'score-circle score-good';
             } else {
                 scoreCircle.className = 'score-circle score-poor';
@@ -445,32 +735,42 @@
             scoreCircle.textContent = score + '%';
             
             // 준수 상태
-            document.getElementById('complianceStatus').textContent = analysis.compliance_status;
+            document.getElementById('complianceStatus').textContent = analysis.compliance_status || '분석 중';
             
             // 분석 상세 내용
             const analysisDetails = document.getElementById('analysisDetails');
             let detailsHtml = '';
             
-            if (analysis.missing_requirements.length > 0) {
-                detailsHtml += '<div class="alert alert-warning"><strong>❌ 부족한 서류:</strong><br>';
-                analysis.missing_requirements.forEach(req => {
-                    detailsHtml += `• ${req}<br>`;
-                });
-                detailsHtml += '</div>';
-            }
-            
-            if (analysis.critical_issues.length > 0) {
-                detailsHtml += '<div class="alert alert-danger"><strong>🚨 긴급 개선사항:</strong><br>';
+            // 주요 문제점들 표시
+            if (analysis.critical_issues && analysis.critical_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-danger"><strong>🚨 주요 문제점:</strong><br>';
                 analysis.critical_issues.forEach(issue => {
                     detailsHtml += `• ${issue}<br>`;
                 });
                 detailsHtml += '</div>';
             }
             
-            if (analysis.minor_issues.length > 0) {
-                detailsHtml += '<div class="alert alert-info"><strong>⚠️ 권장 개선사항:</strong><br>';
+            if (analysis.major_issues && analysis.major_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-warning"><strong>⚠️ 개선 필요:</strong><br>';
+                analysis.major_issues.forEach(issue => {
+                    detailsHtml += `• ${issue}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            if (analysis.minor_issues && analysis.minor_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-info"><strong>💡 권장사항:</strong><br>';
                 analysis.minor_issues.forEach(issue => {
                     detailsHtml += `• ${issue}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            // 기존 missing_requirements 처리 (호환성)
+            if (analysis.missing_requirements && analysis.missing_requirements.length > 0) {
+                detailsHtml += '<div class="alert alert-warning"><strong>❌ 부족한 서류:</strong><br>';
+                analysis.missing_requirements.forEach(req => {
+                    detailsHtml += `• ${req}<br>`;
                 });
                 detailsHtml += '</div>';
             }
@@ -481,9 +781,13 @@
             const suggestionsContainer = document.getElementById('suggestionsContainer');
             let suggestionsHtml = '';
             
-            analysis.improvement_suggestions.forEach(suggestion => {
-                suggestionsHtml += `<div class="suggestion-item">${suggestion}</div>`;
-            });
+            if (analysis.improvement_suggestions && analysis.improvement_suggestions.length > 0) {
+                analysis.improvement_suggestions.forEach(suggestion => {
+                    suggestionsHtml += `<div class="suggestion-item">${suggestion}</div>`;
+                });
+            } else {
+                suggestionsHtml = '<div class="suggestion-item">분석 결과에 따른 개선 제안이 준비 중입니다.</div>';
+            }
             
             suggestionsContainer.innerHTML = suggestionsHtml;
         }
