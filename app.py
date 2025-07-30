@@ -61,20 +61,11 @@ IS_HEROKU = os.environ.get('IS_HEROKU', False)
 IS_RAILWAY = os.environ.get('IS_RAILWAY', False)
 IS_CLOUD = IS_HEROKU or IS_RAILWAY
 
-# 클라우드 환경에서는 파일 시스템 사용 제한
-if IS_CLOUD:
-    print("☁️ 클라우드 환경 감지: 파일 시스템 기능 제한")
-    # 모델 로딩 비활성화
-    MODEL_LOADING_ENABLED = False
-    # 파일 업로드 비활성화
-    FILE_UPLOAD_ENABLED = False
-    # 실시간 크롤링 비활성화
-    REALTIME_CRAWLING_ENABLED = False
-else:
-    print("💻 로컬 환경: 모든 기능 활성화")
-    MODEL_LOADING_ENABLED = True
-    FILE_UPLOAD_ENABLED = True
-    REALTIME_CRAWLING_ENABLED = True
+# 모든 환경에서 기능 활성화 (로컬과 동일하게)
+print("🚀 모든 기능 활성화: 로컬과 동일한 환경")
+MODEL_LOADING_ENABLED = True
+FILE_UPLOAD_ENABLED = True
+REALTIME_CRAWLING_ENABLED = True
 
 class WebMVPCustomsAnalyzer:
     """웹용 MVP 통관 거부사례 분석기 (강화된 키워드 확장 포함)"""
@@ -91,14 +82,6 @@ class WebMVPCustomsAnalyzer:
     def load_model(self):
         """학습된 모델 로드"""
         try:
-            # 클라우드 환경에서는 모델 로딩 비활성화
-            if not MODEL_LOADING_ENABLED:
-                print("⚠️ 클라우드 환경: 모델 로딩 비활성화")
-                self.vectorizer = None
-                self.indexed_matrix = None
-                self.raw_data = None
-                return
-            
             with open('model/vectorizer.pkl', 'rb') as f:
                 self.vectorizer = pickle.load(f)
             with open('model/indexed_matrix.pkl', 'rb') as f:
@@ -3440,12 +3423,7 @@ def get_template_info(doc_type):
 def api_ocr_extract():
     """OCR 기반 라벨 정보 추출 API (한글 우선 + 번역 지원)"""
     try:
-        # 클라우드 환경에서는 파일 업로드 비활성화
-        if not FILE_UPLOAD_ENABLED:
-            return jsonify({
-                'error': '클라우드 환경에서는 파일 업로드가 제한됩니다.',
-                'message': '로컬 환경에서 파일 업로드 기능을 사용해주세요.'
-            }), 503
+
         
         if 'image' not in request.files:
             return jsonify({'error': '이미지 파일이 없습니다.'})
