@@ -2023,36 +2023,51 @@ def api_compliance_analysis():
     print("🔍 준수성 분석 API 호출됨")
     
     try:
-        # FormData에서 데이터 추출 (안전한 방식)
-        country = request.form.get('country', '')
-        product_type = request.form.get('product_type', '식품')
-        use_ocr = request.form.get('use_ocr', 'true').lower() == 'true'
+        # Content-Type에 따라 데이터 추출 방식 결정
+        if request.content_type and 'application/json' in request.content_type:
+            # JSON 요청 처리
+            data = request.get_json()
+            country = data.get('country', '')
+            product_type = data.get('product_type', '식품')
+            use_ocr = data.get('use_ocr', True)
+            company_info = data.get('company_info', {})
+            product_info = data.get('product_info', {})
+            uploaded_documents = data.get('uploaded_documents', [])
+            prepared_documents = data.get('prepared_documents', [])
+            labeling_info = data.get('labeling_info', {})
+        else:
+            # FormData 요청 처리 (기존 방식)
+            country = request.form.get('country', '')
+            product_type = request.form.get('product_type', '식품')
+            use_ocr = request.form.get('use_ocr', 'true').lower() == 'true'
+            
+            # JSON 문자열을 안전하게 파싱
+            try:
+                company_info = json.loads(request.form.get('company_info', '{}'))
+            except json.JSONDecodeError:
+                company_info = {}
+                
+            try:
+                product_info = json.loads(request.form.get('product_info', '{}'))
+            except json.JSONDecodeError:
+                product_info = {}
+                
+            try:
+                uploaded_documents = json.loads(request.form.get('uploaded_documents', '[]'))
+            except json.JSONDecodeError:
+                uploaded_documents = []
+                
+            try:
+                prepared_documents = json.loads(request.form.get('prepared_documents', '[]'))
+            except json.JSONDecodeError:
+                prepared_documents = []
+                
+            try:
+                labeling_info = json.loads(request.form.get('labeling_info', '{}'))
+            except json.JSONDecodeError:
+                labeling_info = {}
         
-        # JSON 문자열을 안전하게 파싱
-        try:
-            company_info = json.loads(request.form.get('company_info', '{}'))
-        except json.JSONDecodeError:
-            company_info = {}
-            
-        try:
-            product_info = json.loads(request.form.get('product_info', '{}'))
-        except json.JSONDecodeError:
-            product_info = {}
-            
-        try:
-            uploaded_documents = json.loads(request.form.get('uploaded_documents', '[]'))
-        except json.JSONDecodeError:
-            uploaded_documents = []
-            
-        try:
-            prepared_documents = json.loads(request.form.get('prepared_documents', '[]'))
-        except json.JSONDecodeError:
-            prepared_documents = []
-            
-        try:
-            labeling_info = json.loads(request.form.get('labeling_info', '{}'))
-        except json.JSONDecodeError:
-            labeling_info = {}
+
         
         print(f"🌍 국가: {country}")
         print(f"📦 제품타입: {product_type}")
@@ -2385,6 +2400,71 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'service': 'KATI Compliance Analysis API'
     })
+
+@app.route('/api/test-document-generation', methods=['POST'])
+def test_document_generation():
+    """테스트용 문서 생성 API"""
+    print("🧪 테스트 문서 생성 API 호출됨")
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON 데이터가 필요합니다.'})
+        
+        country = data.get('country', '중국')
+        product_info = data.get('product_info', {'name': '테스트라면', 'weight': '120g'})
+        company_info = data.get('company_info', {'name': '테스트회사', 'address': '서울시'})
+        
+        print(f"🌍 테스트 국가: {country}")
+        print(f"📦 테스트 제품: {product_info}")
+        
+        # 테스트 PDF 파일 생성
+        os.makedirs('generated_documents', exist_ok=True)
+        
+        test_filename = f"테스트_상업송장_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        test_path = os.path.join('generated_documents', test_filename)
+        
+        # 간단한 테스트 PDF 생성
+        try:
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+            
+            c = canvas.Canvas(test_path, pagesize=letter)
+            c.drawString(100, 750, f"테스트 상업송장 - {country}")
+            c.drawString(100, 730, f"제품: {product_info.get('name', '테스트라면')}")
+            c.drawString(100, 710, f"회사: {company_info.get('name', '테스트회사')}")
+            c.drawString(100, 690, f"생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            c.save()
+            
+            print(f"✅ 테스트 PDF 생성 완료: {test_path}")
+            
+            return jsonify({
+                'success': True,
+                'test_mode': True,
+                'message': '테스트 문서 생성 완료',
+                'pdf_files': {'상업송장': test_filename},
+                'download_urls': {'상업송장': f"/api/download-document/{test_filename}"},
+                'generated_count': 1,
+                'download_instructions': {
+                    'method': 'GET',
+                    'urls': {'상업송장': f"/api/download-document/{test_filename}"},
+                    'note': '테스트 PDF 파일을 다운로드할 수 있습니다.'
+                }
+            })
+            
+        except Exception as e:
+            print(f"❌ 테스트 PDF 생성 실패: {e}")
+            return jsonify({
+                'error': f'테스트 PDF 생성 실패: {str(e)}',
+                'success': False
+            })
+        
+    except Exception as e:
+        print(f"❌ 테스트 문서 생성 API 오류: {str(e)}")
+        return jsonify({
+            'error': f'테스트 중 오류가 발생했습니다: {str(e)}',
+            'success': False
+        })
         print(f"❌ 준수성 분석 오류: {str(e)}")
         import traceback
         print(f"📋 상세 오류: {traceback.format_exc()}")
@@ -3004,7 +3084,7 @@ def api_document_generation():
             # PDF 다운로드 URL 생성
             pdf_download_urls = {}
             for doc_name, filename in pdf_files.items():
-                pdf_download_urls[doc_name] = f"/generated_documents/{filename}"
+                pdf_download_urls[doc_name] = f"/api/download-document/{filename}"
             
             return jsonify({
                 'success': True,
@@ -3012,7 +3092,12 @@ def api_document_generation():
                 'documents': documents,
                 'pdf_files': pdf_files,
                 'download_urls': pdf_download_urls,
-                'generated_count': len(pdf_files)
+                'generated_count': len(pdf_files),
+                'download_instructions': {
+                    'method': 'GET',
+                    'urls': pdf_download_urls,
+                    'note': '각 URL을 브라우저에서 직접 접속하거나 JavaScript로 window.open() 사용'
+                }
             })
         except Exception as pdf_error:
             print(f"❌ PDF 생성 오류: {pdf_error}")
@@ -3788,9 +3873,61 @@ def serve_label_image(filename):
 def serve_document(filename):
     """생성된 서류 파일 서빙"""
     try:
-        return send_from_directory('generated_documents', filename)
+        # 디렉토리 생성 확인
+        os.makedirs('generated_documents', exist_ok=True)
+        
+        file_path = os.path.join('generated_documents', filename)
+        
+        # 파일 존재 확인
+        if not os.path.exists(file_path):
+            print(f"❌ 파일 없음: {file_path}")
+            return jsonify({'error': f'파일을 찾을 수 없습니다: {filename}'}), 404
+        
+        print(f"✅ 파일 서빙: {file_path} ({os.path.getsize(file_path)} bytes)")
+        
+        # PDF 파일인 경우 다운로드 헤더 설정
+        if filename.lower().endswith('.pdf'):
+            return send_from_directory(
+                'generated_documents', 
+                filename,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/pdf'
+            )
+        else:
+            return send_from_directory('generated_documents', filename)
+            
     except Exception as e:
+        print(f"❌ 파일 서빙 오류: {str(e)}")
         return jsonify({'error': f'파일을 찾을 수 없습니다: {str(e)}'}), 404
+
+@app.route('/api/download-document/<filename>')
+def download_document(filename):
+    """문서 다운로드 API"""
+    try:
+        # 디렉토리 생성 확인
+        os.makedirs('generated_documents', exist_ok=True)
+        
+        file_path = os.path.join('generated_documents', filename)
+        
+        # 파일 존재 확인
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'파일을 찾을 수 없습니다: {filename}'}), 404
+        
+        print(f"✅ 다운로드 요청: {file_path} ({os.path.getsize(file_path)} bytes)")
+        
+        # 파일 다운로드
+        return send_from_directory(
+            'generated_documents', 
+            filename,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        print(f"❌ 다운로드 오류: {str(e)}")
+        return jsonify({'error': f'다운로드 중 오류가 발생했습니다: {str(e)}'}), 500
 
 @app.route('/api/template-info/<doc_type>')
 def get_template_info(doc_type):
@@ -4322,6 +4459,7 @@ def extract_image_data(filepath):
         data['metadata']['image_mode'] = image.mode
         
         # OCR 텍스트 추출
+        ocr_text = ""
         try:
             ocr_text = pytesseract.image_to_string(image, lang='kor+eng')
             if ocr_text.strip():
@@ -4351,8 +4489,11 @@ def extract_image_data(filepath):
             print(f"⚠️ 테이블 추출 오류: {str(table_error)}")
         
         # 숫자 패턴 추출
-        numbers = extract_numbers_from_text(ocr_text)
-        data['numbers'] = numbers
+        if ocr_text:
+            numbers = extract_numbers_from_text(ocr_text)
+            data['numbers'] = numbers
+        else:
+            data['numbers'] = []
         
     except Exception as e:
         print(f"❌ 이미지 추출 오류: {str(e)}")
