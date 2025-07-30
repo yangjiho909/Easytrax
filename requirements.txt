@@ -32,7 +32,7 @@ opencv-python-headless>=4.8.1.78
 
 # AI 기능 (2단계 추가)
 transformers>=4.35.2
-torch>=2.1.1+cpu
+torch>=2.1.1
 spacy>=3.7.2
 huggingface-hub>=0.19.4
 
