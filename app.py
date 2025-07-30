@@ -50,11 +50,14 @@ except ImportError as e:
                    "포장명세서": f"대체 포장명세서 - {country} {product}"}
 
 app = Flask(__name__)
-app.secret_key = 'kati_mvp_secret_key_2024'
+app.secret_key = os.environ.get('SECRET_KEY', 'kati_mvp_secret_key_2024')
 
-# 업로드 폴더 설정
-app.config['UPLOAD_FOLDER'] = 'uploaded_documents'
+# 업로드 폴더 설정 (Heroku 호환)
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploaded_documents')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Heroku 환경 감지
+IS_HEROKU = os.environ.get('IS_HEROKU', False)
 
 class WebMVPCustomsAnalyzer:
     """웹용 MVP 통관 거부사례 분석기 (강화된 키워드 확장 포함)"""
@@ -71,6 +74,12 @@ class WebMVPCustomsAnalyzer:
     def load_model(self):
         """학습된 모델 로드"""
         try:
+            # Heroku 환경에서는 모델 파일이 없을 수 있음
+            model_path = 'model/'
+            if IS_HEROKU:
+                print("⚠️ Heroku 환경: 모델 로딩 건너뜀")
+                return
+            
             with open('model/vectorizer.pkl', 'rb') as f:
                 self.vectorizer = pickle.load(f)
             with open('model/indexed_matrix.pkl', 'rb') as f:
@@ -80,6 +89,10 @@ class WebMVPCustomsAnalyzer:
             print("✅ 웹 MVP 모델 로드 완료")
         except Exception as e:
             print(f"❌ 모델 로드 실패: {e}")
+            # 모델 로드 실패 시에도 기본 기능은 동작하도록
+            self.vectorizer = None
+            self.indexed_matrix = None
+            self.raw_data = None
     
     def load_enhanced_keyword_expander(self):
         """강화된 키워드 확장 시스템 로드"""
