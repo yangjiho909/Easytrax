@@ -1,0 +1,5 @@
+[33mdfbdbf9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m AWS 배포를 위한 설정 업데이트
+[33m1a74ab2[m AWS 배포 정보 추가 - GitHub Actions 자동 배포 테스트
+[33m31d2d67[m AWS 배포 가이드 및 상태 보고서 업데이트
+[33m7f72018[m AWS 배포 설정 완료 - Elastic Beanstalk 자동 배포 구성
+[33m2c3a6d6[m Render 배포 설정 추가

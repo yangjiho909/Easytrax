@@ -44,59 +44,41 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Flask
-instance/
-.webassets-cache
-
 # Logs
 *.log
 logs/
 
 # Temporary files
-temp_uploads/
+temp/
+tmp/
 *.tmp
 *.temp
 
-# Model files (too large for GitHub)
-model/
-*.pkl
-*.pickle
+# Uploaded files (for security)
+uploaded_documents/
+uploaded_labels/
+uploaded_templates/
+temp_uploads/
 
 # Generated files
 generated_documents/
 advanced_labels/
-uploaded_labels/
-uploaded_documents/
 mvp_documents_*/
+
+# Data files (large files)
+data/
+regulation_data/
+regulation_cache/
+
+# Model files
+model/
+*.pkl
+*.pickle
 
 # Environment variables
 .env
 .env.local
 .env.production
 
-# AWS
-.elasticbeanstalk/
-*.ebextensions/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Backup files
-백업/
-backup/
-
-# Large data files
-data/*.xlsx
-data/*.csv
-data/*.json
-
-# Regulation cache
-regulation_cache/
-exported_regulations/
-
-# OCR and AI model files
-*.h5
-*.model
-*.weights 
+# Render specific
+.render-buildlogs/ 
