@@ -1,0 +1,324 @@
+{
+  "시스템_정보": {
+    "Python_버전": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+    "Pandas_버전": "2.3.1",
+    "Scikit_learn_버전": "1.7.1",
+    "Soynlp_버전": "0.0.493",
+    "현재_작업_디렉토리": "C:\\Users\\양지호\\OneDrive - 숭실대학교 - Soongsil University\\바탕 화면\\대외 활동\\산업통상자원부 데이터공모전\\KATI2",
+    "점검_시간": "2025-07-27T13:35:05.167233"
+  },
+  "파일_존재_확인": {
+    "모델_파일": {
+      "model/vectorizer.pkl": {
+        "존재": true,
+        "크기": 455462
+      },
+      "model/indexed_matrix.pkl": {
+        "존재": true,
+        "크기": 39481120
+      },
+      "model/raw_data.pkl": {
+        "존재": true,
+        "크기": 67233547
+      }
+    },
+    "핵심_모듈": {
+      "mvp_integrated_system.py": {
+        "존재": true,
+        "크기": 38923
+      },
+      "mvp_regulations.py": {
+        "존재": true,
+        "크기": 10175
+      },
+      "real_time_regulation_system.py": {
+        "존재": true,
+        "크기": 30127
+      },
+      "regulation_monitor.py": {
+        "존재": true,
+        "크기": 13262
+      },
+      "nutrition_label_generator.py": {
+        "존재": true,
+        "크기": 15513
+      },
+      "advanced_label_generator.py": {
+        "존재": true,
+        "크기": 26285
+      },
+      "document_generator.py": {
+        "존재": true,
+        "크기": 46210
+      },
+      "dashboard_analyzer.py": {
+        "존재": true,
+        "크기": 14002
+      },
+      "integrated_nlg_engine.py": {
+        "존재": true,
+        "크기": 5892
+      }
+    },
+    "데이터_파일": {
+      "data/customsExcel (1).xlsx": {
+        "존재": true,
+        "크기": 30594
+      },
+      "data/customsExcel (2).xlsx": {
+        "존재": true,
+        "크기": 217908
+      }
+    },
+    "생성된_폴더": {
+      "regulation_cache/": {
+        "존재": true,
+        "크기": 4096
+      },
+      "nutrition_labels/": {
+        "존재": false,
+        "크기": 0
+      },
+      "advanced_labels/": {
+        "존재": true,
+        "크기": 0
+      },
+      "generated_documents/": {
+        "존재": true,
+        "크기": 24576
+      }
+    }
+  },
+  "모듈_임포트_확인": {
+    "mvp_regulations": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "MVP_REGULATIONS",
+        "datetime",
+        "display_mvp_regulation_info",
+        "get_mvp_countries",
+        "get_mvp_products",
+        "get_mvp_regulations",
+        "json",
+        "main",
+        "pd",
+        "search_mvp_regulations"
+      ]
+    },
+    "real_time_regulation_system": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Any",
+        "BeautifulSoup",
+        "Dict",
+        "ET",
+        "List",
+        "Optional",
+        "Path",
+        "RealTimeRegulationCrawler",
+        "RegulationSource",
+        "dataclass",
+        "datetime",
+        "hashlib",
+        "json",
+        "main",
+        "os",
+        "pd",
+        "re",
+        "requests",
+        "schedule",
+        "threading",
+        "time",
+        "timedelta"
+      ]
+    },
+    "regulation_monitor": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Dict",
+        "List",
+        "Optional",
+        "Path",
+        "RealTimeRegulationCrawler",
+        "RegulationMonitor",
+        "datetime",
+        "json",
+        "main",
+        "os",
+        "threading",
+        "time",
+        "timedelta"
+      ]
+    },
+    "nutrition_label_generator": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "APIImageGenerator",
+        "Dict",
+        "Image",
+        "ImageDraw",
+        "ImageFont",
+        "List",
+        "NutritionLabelGenerator",
+        "Optional",
+        "datetime",
+        "json",
+        "main",
+        "os",
+        "requests"
+      ]
+    },
+    "advanced_label_generator": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "AdvancedLabelGenerator",
+        "Dict",
+        "Image",
+        "ImageDraw",
+        "ImageFont",
+        "List",
+        "Optional",
+        "Tuple",
+        "base64",
+        "datetime",
+        "json",
+        "main",
+        "os",
+        "qrcode",
+        "requests",
+        "timedelta"
+      ]
+    },
+    "document_generator": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Dict",
+        "DocumentGenerator",
+        "List",
+        "Optional",
+        "datetime",
+        "json",
+        "main",
+        "os",
+        "timedelta"
+      ]
+    },
+    "dashboard_analyzer": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Counter",
+        "DashboardAnalyzer",
+        "datetime",
+        "main",
+        "np",
+        "pd",
+        "pickle",
+        "re"
+      ]
+    },
+    "integrated_nlg_engine": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Any",
+        "CustomsAnalysisNLG",
+        "Dict",
+        "IntegratedNLGEngine",
+        "List",
+        "Optional",
+        "RegulationNLG"
+      ]
+    },
+    "customs_analysis_nlg": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "BaseNLG",
+        "Counter",
+        "CustomsAnalysisNLG",
+        "Dict",
+        "List"
+      ]
+    },
+    "regulation_nlg": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "BaseNLG",
+        "Dict",
+        "List",
+        "RegulationNLG"
+      ]
+    },
+    "natural_language_generator": {
+      "임포트_성공": true,
+      "클래스_목록": [
+        "Any",
+        "BaseNLG",
+        "Counter",
+        "Dict",
+        "Enum",
+        "List",
+        "NLGContext",
+        "Optional",
+        "OutputType",
+        "dataclass",
+        "datetime",
+        "re"
+      ]
+    }
+  },
+  "기능_테스트": {
+    "모델_로딩": {
+      "성공": true,
+      "데이터_크기": 164921,
+      "컬럼_수": 8
+    },
+    "통관_분석": {
+      "성공": true,
+      "결과_수": 10
+    },
+    "규제_정보": {
+      "성공": true,
+      "규제_항목_수": 6
+    },
+    "실시간_크롤링": {
+      "성공": true,
+      "캐시_파일_수": 3
+    },
+    "라벨_생성": {
+      "성공": true,
+      "생성기_타입": "NutritionLabelGenerator"
+    },
+    "문서_생성": {
+      "성공": true,
+      "생성기_타입": "DocumentGenerator"
+    },
+    "대시보드_분석": {
+      "성공": true,
+      "분석기_타입": "DashboardAnalyzer"
+    }
+  },
+  "오류_시뮬레이션": {
+    "파일_접근_오류_처리": {
+      "성공": true,
+      "예상_동작": "FileNotFoundError 정상 처리"
+    },
+    "모듈_임포트_오류_처리": {
+      "성공": true,
+      "예상_동작": "ImportError 정상 처리"
+    },
+    "데이터_접근_오류_처리": {
+      "성공": true,
+      "예상_동작": "기본값 반환"
+    }
+  },
+  "전체_평가": {
+    "총_검사_항목": 39,
+    "성공_항목": 38,
+    "실패_항목": 1,
+    "성공률": 97.43589743589743,
+    "성공률_문자열": "97.4%",
+    "전체_상태": "🟢 우수",
+    "오류_수": 0,
+    "경고_수": 1,
+    "점검_완료_시간": "2025-07-27T13:35:08.061775"
+  }
+}
