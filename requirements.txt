@@ -37,4 +37,8 @@ scipy==1.11.1
 # 웹 인터페이스
 flask-cors==4.0.0
 # Heroku 배포용 추가 라이브러리
-psycopg2-binary==2.9.7 
+psycopg2-binary==2.9.7
+# 외부 AI API 라이브러리
+google-cloud-vision==3.4.4
+azure-cognitiveservices-vision-computervision==0.9.0
+openai==1.3.0 

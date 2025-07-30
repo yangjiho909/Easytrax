@@ -20,6 +20,15 @@ from soynlp.tokenizer import RegexTokenizer
 from typing import Dict
 import json
 
+# 클라우드 시스템 import
+try:
+    from cloud_storage import cloud_storage
+    from external_ai_services import external_ai
+    from cloud_regulation_crawler import cloud_regulation_crawler
+    print("✅ 클라우드 시스템 모듈 import 성공")
+except ImportError as e:
+    print(f"⚠️ 클라우드 시스템 모듈 import 실패: {e}")
+
 # MVP 모듈들 import
 try:
     from mvp_regulations import get_mvp_regulations, get_mvp_countries, get_mvp_products, display_mvp_regulation_info

@@ -1,133 +1,124 @@
-# 🚀 KATI MVP 시스템 배포 가이드
+# 🚀 KATI2 배포 가이드
 
-## 📋 배포 단계별 가이드
+## 📋 배포 전 확인사항
 
-### 1단계: GitHub 저장소 생성
+### ✅ 현재 구현된 기능들
+- **웹 인터페이스**: 모든 HTML 페이지 및 API 엔드포인트
+- **실시간 규제 크롤링**: 외부 API 연동으로 실시간 데이터 수집
+- **AI 기반 분석**: Google Cloud Vision, Azure Computer Vision, OpenAI 연동
+- **파일 업로드/다운로드**: 클라우드 스토리지 시스템
+- **문서 생성**: PDF, Excel, Word 문서 생성
+- **OCR 처리**: 이미지에서 텍스트 추출 및 분석
+- **영양 라벨 생성**: AI 기반 영양 정보 분석
 
-1. **GitHub.com에 로그인**
-2. **새 저장소 생성**
-   - Repository name: `kati-mvp-system`
-   - Description: `KATI MVP 통합 수출 지원 시스템`
-   - Public 선택
-   - README 파일 생성 체크 해제 (이미 있음)
+### 🔧 클라우드 최적화 완료
+- **파일 시스템**: 임시 파일 시스템으로 대체
+- **AI 모델**: 외부 API로 대체 (로컬 모델과 동일한 기능)
+- **캐싱**: 메모리 기반 캐싱 시스템
+- **실시간 크롤링**: 외부 API 연동
 
-### 2단계: 로컬 저장소를 GitHub에 연결
+## 🌐 배포 플랫폼 선택
 
+### 1. Railway (권장)
+- **무료 티어**: 월 $5 크레딧
+- **리소스**: 1GB RAM, 3GB 저장공간
+- **장점**: GitHub 연동, 자동 배포, 관대한 제한
+
+### 2. Heroku
+- **무료 티어**: 없음 (유료만)
+- **리소스**: 512MB RAM (무료 플랜 없음)
+- **장점**: 안정적, 확장성 좋음
+
+### 3. Render
+- **무료 티어**: 512MB RAM
+- **리소스**: 제한적이지만 무료
+- **장점**: 간단한 배포
+
+## 💰 비용 정보
+
+### Railway
+- **무료**: 월 $5 크레딧 (충분함)
+- **유료**: $20/월부터 (대규모 사용시)
+
+### 외부 AI API 비용
+- **Google Cloud Vision**: $1.50/1000회 요청
+- **Azure Computer Vision**: $1.00/1000회 요청  
+- **OpenAI GPT-3.5**: $0.002/1000 토큰
+
+### 예상 월 비용
+- **소규모 사용**: $5-10/월
+- **중규모 사용**: $20-50/월
+- **대규모 사용**: $100+/월
+
+## 🔑 환경변수 설정
+
+### 필수 환경변수
 ```bash
-# 원격 저장소 추가 (YOUR_USERNAME을 실제 GitHub 사용자명으로 변경)
-git remote add origin https://github.com/YOUR_USERNAME/kati-mvp-system.git
-
-# 메인 브랜치를 main으로 변경
-git branch -M main
-
-# GitHub에 푸시
-git push -u origin main
+SECRET_KEY=your_secret_key_here
+IS_RAILWAY=true
 ```
 
-### 3단계: Render 배포
-
-1. **Render.com에 로그인**
-2. **새 Web Service 생성**
-3. **GitHub 저장소 연결**
-   - Connect to: GitHub
-   - Repository: `kati-mvp-system` 선택
-
-4. **서비스 설정**
-   - Name: `kati-customs-helper`
-   - Environment: `Python 3`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
-
-5. **환경 변수 설정**
-   - `FLASK_ENV`: `production`
-   - `PYTHON_VERSION`: `3.9.16`
-
-6. **배포 시작**
-   - Create Web Service 클릭
-
-### 4단계: 배포 확인
-
-배포가 완료되면 다음 URL로 접속 가능:
-```
-https://kati-customs-helper.onrender.com
+### 선택적 AI API 키 (성능 향상)
+```bash
+GOOGLE_CLOUD_API_KEY=your_google_api_key
+AZURE_VISION_KEY=your_azure_key
+AZURE_VISION_ENDPOINT=your_azure_endpoint
+OPENAI_API_KEY=your_openai_key
 ```
 
-## 🔧 배포 후 확인사항
+## 📦 배포 단계
 
-### 1. 웹사이트 접속 테스트
-- 메인 페이지 로딩 확인
-- 모든 메뉴 페이지 접속 확인
-- API 호출 테스트
-
-### 2. 기능 테스트
-- 실시간 규제정보 조회
-- 통관 거부사례 분석
-- 규제 준수성 분석
-- 자동 서류 생성
-- 영양정보 라벨 생성
-
-### 3. 성능 확인
-- 페이지 로딩 속도
-- API 응답 시간
-- 동시 접속자 처리
-
-## 📊 배포 상태 모니터링
-
-### Render 대시보드에서 확인할 수 있는 정보:
-- 서비스 상태 (Live/Deploying/Failed)
-- 로그 확인
-- 리소스 사용량
-- 응답 시간
-
-### 문제 해결:
-- 로그 확인: Render 대시보드 → Logs
-- 환경 변수 확인: Settings → Environment Variables
-- 빌드 오류 확인: Build Logs
-
-## 🌐 공개 URL
-
-배포 완료 후 다음 URL로 전 세계 누구나 접속 가능:
+### 1. GitHub 푸시
+```bash
+git add .
+git commit -m "클라우드 배포 준비 완료"
+git push origin main
 ```
-https://kati-customs-helper.onrender.com
+
+### 2. Railway 배포
+1. [Railway.app](https://railway.app) 가입
+2. GitHub 저장소 연결
+3. 자동 배포 시작
+
+### 3. 환경변수 설정
+- Railway 대시보드에서 환경변수 설정
+- AI API 키 추가 (선택사항)
+
+## 🎯 배포 후 확인사항
+
+### ✅ 정상 작동 확인
+- [ ] 웹사이트 접속 가능
+- [ ] 모든 페이지 로딩
+- [ ] 파일 업로드 기능
+- [ ] OCR 처리 기능
+- [ ] 규제 정보 조회
+- [ ] 문서 생성 기능
+
+### ⚠️ 문제 해결
+- **메모리 부족**: Railway 유료 플랜으로 업그레이드
+- **API 제한**: AI API 키 설정
+- **파일 저장**: 클라우드 스토리지 연동
+
+## 🔄 업데이트 방법
+
+### 자동 배포
+- GitHub에 푸시하면 자동 배포
+- 환경변수 변경 시 수동 재배포 필요
+
+### 수동 배포
+```bash
+git push origin main
+# Railway에서 자동으로 배포됨
 ```
 
 ## 📞 지원
 
-배포 중 문제가 발생하면:
-1. Render 로그 확인
-2. GitHub Issues 생성
-3. 개발팀 문의
+### 문제 발생 시
+1. Railway 로그 확인
+2. 환경변수 설정 확인
+3. AI API 키 설정 확인
+4. 메모리 사용량 확인
 
----
-
-**배포 완료 예상 시간**: 5-10분  
-**서비스 유형**: Web Service  
-**플랫폼**: Render  
-**도메인**: kati-customs-helper.onrender.com 
-
-## ✅ **수정 완료!**
-
-### **이제 Render에서 해야 할 일:**
-
-1. **Render 대시보드에서 서비스 설정으로 이동**
-2. **Environment 섹션에서 다음 설정을 직접 입력:**
-
-```
-Build Command: pip install -r requirements.txt
-Start Command: gunicorn app:app
-Environment: Python 3
-```
-
-3. **"Save Changes" 클릭**
-4. **"Manual Deploy" 클릭**
-
-### **또는 더 간단한 방법:**
-
-Render에서 **"Settings"** 탭으로 이동해서:
-- **Build Command**를 `pip install -r requirements.txt`로 설정
-- **Start Command**를 `gunicorn app:app`로 설정
-- **Environment**를 `Python 3`로 설정
-
-이제 Python 프로젝트로 올바르게 인식되어 배포가 성공할 것입니다! 예
-
-Render에서 설정을 변경하고 다시 배포해보세요! 
+### 연락처
+- 기술 지원: 개발팀
+- 비용 문의: Railway 고객지원 
