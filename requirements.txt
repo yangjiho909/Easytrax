@@ -34,7 +34,7 @@ opencv-python-headless>=4.8.1.78
 transformers>=4.35.2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.7.1+cpu
-torchvision==0.18.1+cpu
+torchvision==0.22.1+cpu
 torchaudio==2.7.1+cpu
 spacy>=3.7.2
 huggingface-hub>=0.19.4
