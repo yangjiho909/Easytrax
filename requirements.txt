@@ -32,7 +32,10 @@ opencv-python-headless>=4.8.1.78
 
 # AI 기능 (2단계 추가)
 transformers>=4.35.2
-torch>=2.1.1
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==2.1.1+cpu
+torchvision==0.16.1+cpu
+torchaudio==2.1.1+cpu
 spacy>=3.7.2
 huggingface-hub>=0.19.4
 
