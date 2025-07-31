@@ -223,6 +223,46 @@
             background: rgba(52, 152, 219, 0.05);
         }
         
+        .btn-success {
+            background: var(--success-color);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-warning {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-warning:hover {
+            background: var(--warning-color);
+            border-color: var(--warning-color);
+            color: white;
+        }
+        
+        .progress {
+            height: 1.5rem;
+            border-radius: var(--border-radius-md);
+        }
+        
+        .progress-bar {
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+        }
+        
+        .gap-2 {
+            gap: 0.5rem !important;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -354,6 +394,56 @@
                             규제 정보 조회
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- 자연어 질의 시스템 -->
+            <div class="form-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-robot me-2"></i>
+                    AI 자연어 질의 시스템
+                </h4>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>중국/미국 통관·무역·수출입·시장동향·전략</strong>에 대해 자연어로 질문하세요.
+                    <br><small class="text-muted">예시: "올해 미국 마스크 수출 서류 뭐가 필요하지?", "중국 수출 주요 리스크 알려줘", "이 품목(HS코드)의 미중 유망시장 통계 비교해줘"</small>
+                </div>
+                <div class="row">
+                                         <div class="col-md-10">
+                         <label for="naturalLanguageQuery" class="form-label">질문 입력</label>
+                         <textarea class="form-control" id="naturalLanguageQuery" rows="3" placeholder="중국/미국 통관·무역·수출입·시장동향·전략에 대해 자유롭게 질문하세요..." onkeypress="handleQueryKeyPress(event)"></textarea>
+                     </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-success w-100" onclick="submitNaturalLanguageQuery()">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            질문하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 자연어 질의 로딩 섹션 -->
+            <div id="nlqLoadingSection" class="loading" style="display: none;">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">분석 중...</span>
+                </div>
+                <p class="mt-3">AI가 질문을 분석하고 답변을 생성하고 있습니다...</p>
+            </div>
+            
+            <!-- 자연어 질의 오류 섹션 -->
+            <div id="nlqErrorSection" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="nlqErrorMessage"></span>
+            </div>
+            
+            <!-- 자연어 질의 결과 섹션 -->
+            <div id="nlqResultsSection" style="display: none;">
+                <div class="form-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-comments me-2"></i>
+                        AI 답변
+                    </h4>
+                    <div id="nlqContainer"></div>
                 </div>
             </div>
             
@@ -594,6 +684,209 @@
             
             container.innerHTML = html;
         }
+
+                 // 자연어 질의 시스템
+         function submitNaturalLanguageQuery() {
+             const query = document.getElementById('naturalLanguageQuery').value;
+             const nlqLoadingSection = document.getElementById('nlqLoadingSection');
+             const nlqErrorSection = document.getElementById('nlqErrorSection');
+             const nlqResultsSection = document.getElementById('nlqResultsSection');
+             const nlqContainer = document.getElementById('nlqContainer');
+
+             if (!query) {
+                 alert('질문을 입력해주세요.');
+                 return;
+             }
+
+             // UI 상태 변경
+             nlqLoadingSection.style.display = 'block';
+             nlqErrorSection.style.display = 'none';
+             nlqResultsSection.style.display = 'none';
+             nlqContainer.innerHTML = ''; // 이전 결과 초기화
+
+             // API 호출
+             fetch('/api/natural-language-query', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify({
+                     query: query
+                 })
+             })
+             .then(response => response.json())
+             .then(data => {
+                 nlqLoadingSection.style.display = 'none';
+                 
+                 if (data.error) {
+                     nlqErrorSection.style.display = 'block';
+                     document.getElementById('nlqErrorMessage').textContent = data.error;
+                 } else {
+                     nlqResultsSection.style.display = 'block';
+                     displayNaturalLanguageResult(data, query);
+                 }
+             })
+             .catch(error => {
+                 nlqLoadingSection.style.display = 'none';
+                 document.getElementById('nlqErrorMessage').textContent = '서버 오류가 발생했습니다.';
+                 nlqErrorSection.style.display = 'block';
+             });
+         }
+
+         // 자연어 질의 결과 표시
+         function displayNaturalLanguageResult(data, query) {
+             const container = document.getElementById('nlqContainer');
+             
+             let html = `
+                 <div class="regulation-card success">
+                     <div class="row mb-3">
+                         <div class="col-12">
+                             <h6 class="text-muted">
+                                 <i class="fas fa-question-circle me-2"></i>
+                                 질문
+                             </h6>
+                             <p class="mb-0">${query}</p>
+                         </div>
+                     </div>
+                     
+                     <div class="row mb-3">
+                         <div class="col-12">
+                             <h6 class="text-success">
+                                 <i class="fas fa-robot me-2"></i>
+                                 AI 답변
+                             </h6>
+                             <div class="bg-light p-3 rounded">
+                                 ${data.answer.replace(/\n/g, '<br>')}
+                             </div>
+                         </div>
+                     </div>
+             `;
+
+             // 신뢰도 점수 표시
+             if (data.confidence_score) {
+                 const confidencePercent = Math.round(data.confidence_score * 100);
+                 let confidenceColor = 'success';
+                 if (confidencePercent < 70) confidenceColor = 'warning';
+                 if (confidencePercent < 50) confidenceColor = 'danger';
+                 
+                 html += `
+                     <div class="row mb-3">
+                         <div class="col-12">
+                             <h6 class="text-info">
+                                 <i class="fas fa-chart-line me-2"></i>
+                                 신뢰도 점수
+                             </h6>
+                             <div class="progress mb-2">
+                                 <div class="progress-bar bg-${confidenceColor}" role="progressbar" 
+                                      style="width: ${confidencePercent}%" 
+                                      aria-valuenow="${confidencePercent}" 
+                                      aria-valuemin="0" 
+                                      aria-valuemax="100">
+                                     ${confidencePercent}%
+                                 </div>
+                             </div>
+                             <small class="text-muted">데이터 출처의 신뢰성을 기반으로 계산된 점수입니다.</small>
+                         </div>
+                     </div>
+                 `;
+             }
+
+             // 데이터 출처 표시
+             if (data.data_sources && data.data_sources.length > 0) {
+                 html += `
+                     <div class="row mb-3">
+                         <div class="col-12">
+                             <h6 class="text-primary">
+                                 <i class="fas fa-database me-2"></i>
+                                 데이터 출처
+                             </h6>
+                             <ul class="list-unstyled">
+                 `;
+                 
+                 data.data_sources.forEach(source => {
+                     html += `
+                         <li class="mb-1">
+                             <i class="fas fa-link me-2"></i>
+                             <strong>${source.name}</strong>: ${source.description}
+                             <br><small class="text-muted">신뢰도: ${Math.round(source.reliability * 100)}%</small>
+                         </li>
+                     `;
+                 });
+                 
+                 html += `
+                             </ul>
+                         </div>
+                     </div>
+                 `;
+             }
+
+             // 후속 질문 제안
+             if (data.followup_questions && data.followup_questions.length > 0) {
+                 html += `
+                     <div class="row mb-3">
+                         <div class="col-12">
+                             <h6 class="text-warning">
+                                 <i class="fas fa-lightbulb me-2"></i>
+                                 추가 질문 제안
+                             </h6>
+                             <div class="d-flex flex-wrap gap-2">
+                 `;
+                 
+                 data.followup_questions.forEach(question => {
+                     html += `
+                         <button class="btn btn-outline-warning btn-sm" 
+                                 onclick="document.getElementById('naturalLanguageQuery').value = '${question}'; submitNaturalLanguageQuery();">
+                             ${question}
+                         </button>
+                     `;
+                 });
+                 
+                 html += `
+                             </div>
+                         </div>
+                     </div>
+                 `;
+             }
+
+             // 시각화 제안
+             if (data.visualization_suggestions && data.visualization_suggestions.length > 0) {
+                 html += `
+                     <div class="row">
+                         <div class="col-12">
+                             <h6 class="text-info">
+                                 <i class="fas fa-chart-bar me-2"></i>
+                                 시각화 제안
+                             </h6>
+                             <ul class="list-unstyled">
+                 `;
+                 
+                 data.visualization_suggestions.forEach(suggestion => {
+                     html += `
+                         <li class="mb-1">
+                             <i class="fas fa-chart-line me-2"></i>
+                             ${suggestion}
+                         </li>
+                     `;
+                 });
+                 
+                 html += `
+                             </ul>
+                         </div>
+                     </div>
+                 `;
+             }
+
+             html += `</div>`;
+             container.innerHTML = html;
+         }
+
+         // Enter 키로 질문 제출
+         function handleQueryKeyPress(event) {
+             if (event.key === 'Enter' && !event.shiftKey) {
+                 event.preventDefault();
+                 submitNaturalLanguageQuery();
+             }
+         }
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
