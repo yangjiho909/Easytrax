@@ -2885,55 +2885,169 @@ def extract_basic_structured_data(ocr_result, document_type):
         return {}
 
 def analyze_optimized_compliance_issues(structured_data, regulation_matching, country, product_type):
-    """최적화된 준수성 이슈 분석"""
+    """사용자 입력 기반 준수성 분석 - 단순하고 정확한 점수 계산"""
     try:
-        # 기본 점수 계산
-        base_score = 75
+        print(f"🔍 준수성 분석 시작: {country}, {product_type}")
+        print(f"📊 입력 데이터: {structured_data}")
         
+        # 초기 점수 설정
+        base_score = 100
         critical_issues = []
         major_issues = []
         minor_issues = []
         
-        # 국가별 기본 검사
-        if country == '중국':
-            if not any('중국어' in str(data) for data in structured_data.values()):
-                critical_issues.append("중국어 라벨 표기 필요")
-            if not any('알레르기' in str(data) for data in structured_data.values()):
-                major_issues.append("8대 알레르기 정보 표시 필요")
-        elif country == '미국':
-            if not any('영어' in str(data) for data in structured_data.values()):
-                critical_issues.append("영어 라벨 표기 필요")
-            if not any('nutrition' in str(data).lower() for data in structured_data.values()):
-                major_issues.append("영양성분표 필요")
+        # 1. 필수 서류 검사 (15점)
+        required_docs = ["상업송장", "포장명세서", "원산지증명서"]
+        missing_docs = []
         
-        # 점수 조정
-        if critical_issues:
-            base_score -= 30
-        if major_issues:
-            base_score -= 15
-        if minor_issues:
+        for doc in required_docs:
+            if not any(doc.lower() in str(data).lower() for data in structured_data.values()):
+                missing_docs.append(doc)
+        
+        if missing_docs:
+            doc_deduction = len(missing_docs) * 5  # 문서당 5점 차감 (기존 7점에서 조정)
+            base_score -= min(doc_deduction, 15)
+            critical_issues.extend([f"필수 서류 누락: {doc}" for doc in missing_docs])
+        
+        # 2. 국가별 언어 요구사항 검사 (20점)
+        if country == "중국":
+            if not any('중국어' in str(data) or 'chinese' in str(data).lower() for data in structured_data.values()):
+                base_score -= 20
+                critical_issues.append("중국어 라벨 표기 필수")
+        elif country == "미국":
+            if not any('영어' in str(data) or 'english' in str(data).lower() for data in structured_data.values()):
+                base_score -= 20
+                critical_issues.append("영어 라벨 표기 필수")
+        elif country == "한국":
+            if not any('한국어' in str(data) or 'korean' in str(data).lower() for data in structured_data.values()):
+                base_score -= 20
+                critical_issues.append("한국어 라벨 표기 필수")
+        
+        # 3. 제품 정보 검사 (15점)
+        product_info_checks = ["제품명", "성분", "유통기한", "중량"]
+        missing_product_info = []
+        
+        for info in product_info_checks:
+            if not any(info in str(data) for data in structured_data.values()):
+                missing_product_info.append(info)
+        
+        if missing_product_info:
+            info_deduction = len(missing_product_info) * 3  # 정보당 3점 차감 (기존 5점에서 조정)
+            base_score -= min(info_deduction, 15)
+            major_issues.extend([f"제품 정보 누락: {info}" for info in missing_product_info])
+        
+        # 4. 영양성분 정보 검사 (10점)
+        nutrition_keywords = ["영양", "nutrition", "열량", "calorie", "단백질", "protein"]
+        has_nutrition = any(any(keyword in str(data) for keyword in nutrition_keywords) 
+                          for data in structured_data.values())
+        
+        if not has_nutrition:
+            base_score -= 10
+            major_issues.append("영양성분 정보 표시 필요")
+        
+        # 5. 알레르기 정보 검사 (5점)
+        allergy_keywords = ["알레르기", "allergy", "알레르겐", "allergen"]
+        has_allergy = any(any(keyword in str(data) for keyword in allergy_keywords) 
+                         for data in structured_data.values())
+        
+        if not has_allergy:
             base_score -= 5
+            minor_issues.append("알레르기 정보 표시 권장")
+        
+        # 6. 제조사 정보 검사 (5점)
+        manufacturer_keywords = ["제조사", "manufacturer", "생산자", "producer"]
+        has_manufacturer = any(any(keyword in str(data) for keyword in manufacturer_keywords) 
+                              for data in structured_data.values())
+        
+        if not has_manufacturer:
+            base_score -= 5
+            major_issues.append("제조사 정보 표시 필요")
+        
+        # 점수 보정 (0-100 범위)
+        final_score = max(0, min(100, base_score))
+        
+        # 데이터 품질에 따른 추가 보정
+        data_quality_bonus = 0
+        total_data_items = len(structured_data)
+        
+        if total_data_items == 0:
+            # 빈 데이터는 추가 차감
+            final_score = max(0, final_score - 10)
+        elif total_data_items == 1:
+            # 최소한의 데이터는 약간의 보너스
+            data_quality_bonus = 5
+        elif total_data_items >= 3:
+            # 충분한 데이터는 보너스
+            data_quality_bonus = 10
+        
+        # 최종 점수 계산
+        final_score = max(0, min(100, final_score + data_quality_bonus))
+        
+        # 준수 상태 결정
+        if final_score >= 90:
+            compliance_status = "준수"
+        elif final_score >= 70:
+            compliance_status = "부분 준수"
+        elif final_score >= 50:
+            compliance_status = "미준수 (개선 가능)"
+        else:
+            compliance_status = "심각한 미준수"
+        
+        # 개선 제안 생성
+        suggestions = []
+        if critical_issues:
+            suggestions.append("🚨 긴급 개선사항:")
+            suggestions.extend([f"   • {issue}" for issue in critical_issues[:3]])
+        
+        if major_issues:
+            suggestions.append("⚠️ 주요 개선사항:")
+            suggestions.extend([f"   • {issue}" for issue in major_issues[:3]])
+        
+        if minor_issues:
+            suggestions.append("💡 권장 개선사항:")
+            suggestions.extend([f"   • {issue}" for issue in minor_issues[:2]])
+        
+        # 국가별 특별 제안
+        if country == "중국":
+            suggestions.append("🇨🇳 중국 특별 요건:")
+            suggestions.append("   • GB 7718-2011 표준 준수")
+            suggestions.append("   • 8대 알레르기 정보 필수")
+            suggestions.append("   • 식품안전인증서 필요")
+        elif country == "미국":
+            suggestions.append("🇺🇸 미국 특별 요건:")
+            suggestions.append("   • FDA 규정 준수")
+            suggestions.append("   • 영양성분표 필수")
+            suggestions.append("   • 알레르기 정보 표시")
+        
+        print(f"✅ 분석 완료 - 점수: {final_score}, 상태: {compliance_status}")
         
         return {
-            'overall_score': max(base_score, 0),
+            'overall_score': final_score,
+            'compliance_status': compliance_status,
             'critical_issues': critical_issues,
             'major_issues': major_issues,
             'minor_issues': minor_issues,
-            'suggestions': [
-                f"{country} 현지 대리인과 상담 권장",
-                "사전 검증 서비스 이용",
-                "규제 전문가 자문 구하기"
-                ]
+            'suggestions': suggestions,
+            'analysis_details': {
+                'country': country,
+                'product_type': product_type,
+                'missing_documents': missing_docs,
+                'missing_product_info': missing_product_info,
+                'has_nutrition_info': has_nutrition,
+                'has_allergy_info': has_allergy,
+                'has_manufacturer_info': has_manufacturer
             }
+        }
             
     except Exception as e:
-        print(f"⚠️ 최적화된 준수성 분석 실패: {e}")
+        print(f"⚠️ 준수성 분석 실패: {e}")
         return {
-            'overall_score': 60,
+            'overall_score': 50,
+            'compliance_status': "분석 오류",
             'critical_issues': ["분석 중 오류 발생"],
             'major_issues': [],
             'minor_issues': [],
-            'suggestions': ["문서를 다시 확인해주세요"]
+            'suggestions': ["문서를 다시 확인해주세요", "시스템 관리자에게 문의"]
         }
 def generate_basic_compliance_checklist(compliance_analysis, country, product_type):
     """기본 준수성 체크리스트"""

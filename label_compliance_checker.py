@@ -208,14 +208,18 @@ class LabelComplianceChecker:
         }
     
     def check_compliance(self, label_info: Dict, country: str) -> Dict:
-        """라벨 규제 준수성 검토"""
+        """라벨 규제 준수성 검토 - 단순하고 정확한 점수 계산"""
+        
+        print(f"🔍 라벨 준수성 검토 시작: {country}")
+        print(f"📊 라벨 정보: {label_info}")
         
         if country not in self.regulations:
             return {
                 "compliant": False,
                 "errors": [f"지원하지 않는 국가: {country}"],
                 "warnings": [],
-                "score": 0
+                "score": 0,
+                "compliance_status": "지원하지 않는 국가"
             }
         
         regulation = self.regulations[country]
@@ -223,7 +227,7 @@ class LabelComplianceChecker:
         warnings = []
         score = 100
         
-        # 1. 필수 필드 검증
+        # 1. 필수 필드 검증 (30점)
         field_errors, field_warnings, field_score = self._check_required_fields(
             label_info, regulation
         )
@@ -231,7 +235,7 @@ class LabelComplianceChecker:
         warnings.extend(field_warnings)
         score -= field_score
         
-        # 2. 언어 요구사항 검증
+        # 2. 언어 요구사항 검증 (25점)
         lang_errors, lang_warnings, lang_score = self._check_language_requirements(
             label_info, regulation
         )
@@ -239,15 +243,7 @@ class LabelComplianceChecker:
         warnings.extend(lang_warnings)
         score -= lang_score
         
-        # 3. 형식 요구사항 검증
-        format_errors, format_warnings, format_score = self._check_format_requirements(
-            label_info, regulation
-        )
-        errors.extend(format_errors)
-        warnings.extend(format_warnings)
-        score -= format_score
-        
-        # 4. 영양성분 검증
+        # 3. 영양성분 검증 (20점)
         nutrition_errors, nutrition_warnings, nutrition_score = self._check_nutrition_requirements(
             label_info, regulation
         )
@@ -255,7 +251,7 @@ class LabelComplianceChecker:
         warnings.extend(nutrition_warnings)
         score -= nutrition_score
         
-        # 5. 알레르기 정보 검증
+        # 4. 알레르기 정보 검증 (15점)
         allergy_errors, allergy_warnings, allergy_score = self._check_allergy_requirements(
             label_info, regulation
         )
@@ -263,50 +259,78 @@ class LabelComplianceChecker:
         warnings.extend(allergy_warnings)
         score -= allergy_score
         
-        # 6. 날짜 유효성 검증
-        date_errors, date_warnings, date_score = self._check_date_validity(
+        # 5. 형식 요구사항 검증 (10점)
+        format_errors, format_warnings, format_score = self._check_format_requirements(
             label_info, regulation
         )
-        errors.extend(date_errors)
-        warnings.extend(date_warnings)
-        score -= date_score
+        errors.extend(format_errors)
+        warnings.extend(format_warnings)
+        score -= format_score
+        
+        # 점수 보정 (0-100 범위)
+        final_score = max(0, min(100, score))
+        
+        # 준수 상태 결정
+        if final_score >= 90:
+            compliance_status = "준수"
+        elif final_score >= 70:
+            compliance_status = "부분 준수"
+        elif final_score >= 50:
+            compliance_status = "미준수 (개선 가능)"
+        else:
+            compliance_status = "심각한 미준수"
+        
+        print(f"✅ 라벨 검토 완료 - 점수: {final_score}, 상태: {compliance_status}")
         
         return {
             "compliant": len(errors) == 0,
             "errors": errors,
             "warnings": warnings,
-            "score": max(0, score),
+            "score": final_score,
+            "compliance_status": compliance_status,
             "regulation": regulation["name"],
-            "check_timestamp": datetime.now().isoformat()
+            "check_timestamp": datetime.now().isoformat(),
+            "analysis_details": {
+                "country": country,
+                "total_checks": 5,
+                "passed_checks": 5 - len(errors),
+                "field_score_deduction": field_score,
+                "language_score_deduction": lang_score,
+                "nutrition_score_deduction": nutrition_score,
+                "allergy_score_deduction": allergy_score,
+                "format_score_deduction": format_score
+            }
         }
     
     def _check_required_fields(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """필수 필드 검증"""
+        """필수 필드 검증 (30점 만점)"""
         errors = []
         warnings = []
         score_deduction = 0
         
         mandatory_statements = regulation.get("mandatory_statements", [])
+        max_deduction_per_field = 30 // len(mandatory_statements) if mandatory_statements else 30
         
         for statement in mandatory_statements:
             if not self._has_required_field(label_info, statement):
                 errors.append(f"필수 표기사항 누락: {statement}")
-                score_deduction += 15
+                score_deduction += max_deduction_per_field
             else:
                 # 필드 길이 검증
                 field_value = self._get_field_value(label_info, statement)
                 if field_value:
                     if len(field_value) < 2:
                         warnings.append(f"표기사항이 너무 짧음: {statement}")
-                        score_deduction += 5
+                        score_deduction += 2
                     elif len(field_value) > 500:
                         warnings.append(f"표기사항이 너무 김: {statement}")
-                        score_deduction += 5
+                        score_deduction += 2
         
-        return errors, warnings, score_deduction
+        # 최대 30점까지만 차감
+        return errors, warnings, min(score_deduction, 30)
     
     def _check_language_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """언어 요구사항 검증"""
+        """언어 요구사항 검증 (25점 만점)"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -316,21 +340,22 @@ class LabelComplianceChecker:
         for language in required_languages:
             if not self._has_language_content(label_info, language):
                 errors.append(f"필수 언어 누락: {language}")
-                score_deduction += 20
+                score_deduction += 25
+            else:
+                # 금지 문자 검증
+                forbidden_chars = self._get_forbidden_characters([language])
+                for field, value in label_info.items():
+                    if isinstance(value, str):
+                        for char in forbidden_chars:
+                            if char in value:
+                                warnings.append(f"금지 문자 사용: {char} in {field}")
+                                score_deduction += 2
         
-        # 금지 문자 검증
-        forbidden_chars = self._get_forbidden_characters(required_languages)
-        for field, value in label_info.items():
-            if isinstance(value, str):
-                for char in forbidden_chars:
-                    if char in value:
-                        warnings.append(f"금지 문자 사용: {char} in {field}")
-                        score_deduction += 3
-        
-        return errors, warnings, score_deduction
+        # 최대 25점까지만 차감
+        return errors, warnings, min(score_deduction, 25)
     
     def _check_format_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """형식 요구사항 검증"""
+        """형식 요구사항 검증 (10점 만점)"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -340,14 +365,14 @@ class LabelComplianceChecker:
             date_value = label_info["expiry_date"]
             if not self._is_valid_date_format(date_value):
                 errors.append("유통기한 형식이 올바르지 않음")
-                score_deduction += 10
+                score_deduction += 5
         
         # 중량 형식 검증
         if "weight" in label_info:
             weight_value = label_info["weight"]
             if not self._is_valid_weight_format(weight_value):
                 errors.append("중량 형식이 올바르지 않음")
-                score_deduction += 10
+                score_deduction += 5
         
         # 영양성분 형식 검증
         if "nutrition" in label_info:
@@ -355,12 +380,13 @@ class LabelComplianceChecker:
             for nutrient, value in nutrition_info.items():
                 if not self._is_valid_nutrition_format(value):
                     warnings.append(f"영양성분 형식 오류: {nutrient}")
-                    score_deduction += 5
+                    score_deduction += 2
         
-        return errors, warnings, score_deduction
+        # 최대 10점까지만 차감
+        return errors, warnings, min(score_deduction, 10)
     
     def _check_nutrition_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """영양성분 요구사항 검증"""
+        """영양성분 요구사항 검증 (20점 만점)"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -369,10 +395,11 @@ class LabelComplianceChecker:
         nutrition_info = label_info.get("nutrition", {})
         
         # 필수 영양성분 검증
+        max_deduction_per_component = 20 // len(required_components) if required_components else 20
         for component in required_components:
             if not self._has_nutrition_component(nutrition_info, component):
                 errors.append(f"필수 영양성분 누락: {component}")
-                score_deduction += 10
+                score_deduction += max_deduction_per_component
         
         # 영양성분 값 검증
         for nutrient, value in nutrition_info.items():
@@ -381,18 +408,19 @@ class LabelComplianceChecker:
                     numeric_value = float(re.findall(r'\d+(?:\.\d+)?', str(value))[0])
                     if numeric_value < 0:
                         errors.append(f"영양성분 값이 음수: {nutrient}")
-                        score_deduction += 10
+                        score_deduction += 5
                     elif numeric_value > 10000:
                         warnings.append(f"영양성분 값이 비정상적으로 큼: {nutrient}")
-                        score_deduction += 5
+                        score_deduction += 2
                 except (ValueError, IndexError):
                     warnings.append(f"영양성분 값 형식 오류: {nutrient}")
-                    score_deduction += 5
+                    score_deduction += 2
         
-        return errors, warnings, score_deduction
+        # 최대 20점까지만 차감
+        return errors, warnings, min(score_deduction, 20)
     
     def _check_allergy_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """알레르기 정보 요구사항 검증"""
+        """알레르기 정보 요구사항 검증 (15점 만점)"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -412,9 +440,10 @@ class LabelComplianceChecker:
         for allergy in allergies:
             if len(allergy) < 2:
                 warnings.append(f"알레르기 정보가 너무 짧음: {allergy}")
-                score_deduction += 3
+                score_deduction += 2
         
-        return errors, warnings, score_deduction
+        # 최대 15점까지만 차감
+        return errors, warnings, min(score_deduction, 15)
     
     def _check_date_validity(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
         """날짜 유효성 검증"""

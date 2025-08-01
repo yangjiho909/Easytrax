@@ -525,6 +525,45 @@
                     </div>
                 </div>
 
+                <div class="form-section">
+                    <h3 class="mb-3">
+                        <i class="fas fa-robot me-2"></i>
+                        AI 기반 분석 옵션
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="useAiOcr" checked>
+                                <label class="form-check-label" for="useAiOcr">
+                                    AI 기반 OCR 분석 사용
+                                </label>
+                            </div>
+                            <small class="text-muted">더 정확한 텍스트 추출 및 구조화</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="useRealTimeRegulations" checked>
+                                <label class="form-check-label" for="useRealTimeRegulations">
+                                    실시간 규제 데이터 사용
+                                </label>
+                            </div>
+                            <small class="text-muted">최신 규제 정보로 동적 분석</small>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="updateRegulations()">
+                                <i class="fas fa-sync-alt me-1"></i>
+                                규제 데이터 업데이트
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm ms-2" onclick="checkRegulationStatus()">
+                                <i class="fas fa-info-circle me-1"></i>
+                                규제 상태 확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="text-center">
                     <button type="submit" class="btn btn-analyze btn-lg">
                         <i class="fas fa-search me-2"></i>
@@ -604,6 +643,10 @@
             formData.append('country', document.getElementById('country').value);
             formData.append('product_type', '식품');
             formData.append('use_ocr', 'true');
+            
+            // AI 옵션 추가
+            formData.append('use_ai_ocr', document.getElementById('useAiOcr').checked);
+            formData.append('use_real_time_regulations', document.getElementById('useRealTimeRegulations').checked);
             
             // 회사 정보
             const companyInfo = {
@@ -720,6 +763,76 @@
                 document.getElementById('errorSection').style.display = 'block';
             });
         });
+
+        // 실시간 규제 데이터 업데이트
+        function updateRegulations() {
+            const country = document.getElementById('country').value;
+            if (!country) {
+                alert('국가를 선택해주세요.');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>업데이트 중...';
+            button.disabled = true;
+            
+            fetch('/api/update-regulations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    country: country,
+                    product_type: '식품'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('규제 데이터가 성공적으로 업데이트되었습니다.');
+                } else {
+                    alert('규제 데이터 업데이트에 실패했습니다: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('규제 업데이트 오류:', error);
+                alert('규제 데이터 업데이트 중 오류가 발생했습니다.');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // 규제 상태 확인
+        function checkRegulationStatus() {
+            const country = document.getElementById('country').value;
+            if (!country) {
+                alert('국가를 선택해주세요.');
+                return;
+            }
+            
+            fetch(`/api/regulation-status?country=${country}&product_type=식품`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const status = data.status;
+                    let message = `규제 데이터 상태:\n`;
+                    message += `- 상태: ${status.status}\n`;
+                    message += `- 마지막 업데이트: ${status.last_updated || '없음'}\n`;
+                    message += `- 데이터 소스: ${status.source || '없음'}\n`;
+                    message += `- 규제 수: ${status.regulation_count}개`;
+                    alert(message);
+                } else {
+                    alert('규제 상태 확인에 실패했습니다: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('규제 상태 확인 오류:', error);
+                alert('규제 상태 확인 중 오류가 발생했습니다.');
+            });
+        }
 
         function displayResults(analysis) {
             // 점수 원형 표시
