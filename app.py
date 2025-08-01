@@ -2683,6 +2683,12 @@ def api_compliance_analysis():
                 'error': f'분석 중 오류가 발생했습니다: {str(e)}',
                 'success': False
             })
+    except Exception as e:
+        print(f"❌ API 준수성 분석 오류: {str(e)}")
+        return jsonify({
+            'error': f'API 처리 중 오류가 발생했습니다: {str(e)}',
+            'success': False
+        })
 
 def perform_optimized_compliance_analysis(country, product_type, uploaded_files, uploaded_documents, company_info, product_info):
     """최적화된 OCR/문서분석 기반 준수성 분석"""
