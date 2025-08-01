@@ -2572,6 +2572,12 @@ def api_compliance_analysis():
                     pass
             
             raise e
+    except Exception as e:
+        print(f"❌ 준수성 분석 오류: {str(e)}")
+        return jsonify({
+            'error': f'분석 중 오류가 발생했습니다: {str(e)}',
+            'success': False
+        })
 
 
 def perform_optimized_compliance_analysis(country, product_type, uploaded_files, uploaded_documents, company_info, product_info):
@@ -4238,8 +4244,8 @@ def try_basic_ocr(image):
             text = pytesseract.image_to_string(image, lang='kor+eng', config='--psm 6')
             if text.strip():
                 return text
-                    except Exception:
-                pass
+        except Exception:
+            pass
         
         # Tesseract 실패시 시뮬레이션
         return simulate_ocr_from_image(image)
