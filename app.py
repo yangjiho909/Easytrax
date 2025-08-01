@@ -2568,7 +2568,7 @@ def api_compliance_analysis():
                 try:
                     if os.path.exists(file_info['path']):
                         os.remove(file_info['path'])
-                except:
+                except Exception as e:
                     pass
             
             raise e
@@ -4243,8 +4243,8 @@ def try_basic_ocr(image):
             text = pytesseract.image_to_string(image, lang='kor+eng', config='--psm 6')
             if text.strip():
                 return text
-        except:
-            pass
+                    except Exception:
+                pass
         
         # Tesseract 실패시 시뮬레이션
         return simulate_ocr_from_image(image)
@@ -4795,7 +4795,7 @@ def create_simple_test_label(country, product_info):
                 print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
                 try:
                     draw.text(position, "N/A", fill=fill, font=font)
-                except:
+                except Exception as e:
                     pass
         
         y_position = 30
