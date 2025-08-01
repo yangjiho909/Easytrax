@@ -2568,7 +2568,7 @@ def api_compliance_analysis():
                 try:
                     if os.path.exists(file_info['path']):
                         os.remove(file_info['path'])
-                except Exception as e:
+                except Exception:
                     pass
             
             raise e
@@ -4795,7 +4795,7 @@ def create_simple_test_label(country, product_info):
                 print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
                 try:
                     draw.text(position, "N/A", fill=fill, font=font)
-                except Exception as e:
+                except Exception:
                     pass
         
         y_position = 30
