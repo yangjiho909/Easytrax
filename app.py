@@ -2531,11 +2531,34 @@ def api_compliance_analysis():
             print("📋 문서 없음 - 기본 분석 수행")
             return perform_basic_compliance_analysis(country, product_type, company_info, product_info)
         
-        # 최적화된 OCR/문서분석 수행
-        return perform_optimized_compliance_analysis(
-            country, product_type, uploaded_files, uploaded_documents, 
-            company_info, product_info
-        )
+        try:
+            # 최적화된 OCR/문서분석 수행
+            result = perform_optimized_compliance_analysis(
+                country, product_type, uploaded_files, uploaded_documents, 
+                company_info, product_info
+            )
+            
+            # 임시 파일 정리
+            for file_info in uploaded_files:
+                try:
+                    if os.path.exists(file_info['path']):
+                        os.remove(file_info['path'])
+                        print(f"🗑️ 임시 파일 삭제: {file_info['path']}")
+                except Exception as e:
+                    print(f"⚠️ 임시 파일 삭제 실패: {e}")
+            
+            return result
+            
+        except Exception as e:
+            # 임시 파일 정리 (오류 발생 시에도)
+            for file_info in uploaded_files:
+                try:
+                    if os.path.exists(file_info['path']):
+                        os.remove(file_info['path'])
+                except:
+                    pass
+            
+            raise e
         
     except Exception as e:
         print(f"❌ 준수성 분석 오류: {str(e)}")
@@ -2593,10 +2616,16 @@ def perform_optimized_compliance_analysis(country, product_type, uploaded_files,
         
         # 2단계: 규제 매칭 (최적화)
         print("🔍 2단계: 규제 매칭 시작...")
+        regulation_matching = {}
         try:
-            regulation_matching = match_regulations_with_structured_data(
-                structured_data, country, product_type
-            )
+            # 함수 존재 여부 확인
+            if 'match_regulations_with_structured_data' in globals():
+                regulation_matching = match_regulations_with_structured_data(
+                    structured_data, country, product_type
+                )
+            else:
+                print("⚠️ match_regulations_with_structured_data 함수를 찾을 수 없음")
+                regulation_matching = {}
         except Exception as e:
             print(f"⚠️ 규제 매칭 실패: {e}")
             regulation_matching = {}
@@ -2868,8 +2897,13 @@ def perform_basic_compliance_analysis(country, product_type, company_info, produ
         print("📋 기본 준수성 분석 시작...")
         
         # 기본 규제 정보 로드
+        regulations = {}
         try:
-            regulations = load_country_regulations(country, product_type)
+            # 함수 존재 여부 확인
+            if 'load_country_regulations' in globals():
+                regulations = load_country_regulations(country, product_type)
+            else:
+                print("⚠️ load_country_regulations 함수를 찾을 수 없음")
         except Exception as e:
             print(f"⚠️ 규제 정보 로드 실패: {e}")
             regulations = {}
@@ -7321,7 +7355,7 @@ def process_simple_natural_language_query(query):
             else:
                 return "중국 라면 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
         
-        elif '리스크' in query_lower or '위험' in query_lower:
+        elif '리스크' in query_lower or '위험' in query_lower or '주의사항' in query_lower:
             return """중국 수출 주요 리스크:
 
 1. **규제 리스크**
@@ -7424,10 +7458,40 @@ def process_simple_natural_language_query(query):
    - 방사선 조사 식품 표시
 
 💡 팁: 미국은 식품 안전 규제가 매우 엄격하므로 사전 준비가 중요합니다."""
+            elif '규제' in query_lower or '제한' in query_lower:
+                return """미국 라면 수출 주요 규제사항:
+
+1. **식품 안전 규제**
+   - FDA 식품안전규정
+   - 식품안전현대화법(FSMA) 준수
+   - HACCP 시스템 구축
+
+2. **라벨링 규제**
+   - 영어 표기 필수
+   - 영양성분표 (Nutrition Facts)
+   - 성분표 (Ingredients List)
+   - 알레르기 정보 (8대 알레르기원)
+
+3. **검역 규제**
+   - FDA Prior Notice (수입 전 통지)
+   - 검역검사 통과
+   - 포장재 안전성 검증
+
+4. **수입 제한사항**
+   - 특정 식품첨가물 사용 제한
+   - 유전자변형 원료 사용 시 표시
+   - 방사선 조사 식품 표시
+
+5. **관세 및 비관세 장벽**
+   - HS코드별 관세율 적용
+   - FDA 등록증 필요
+   - 검역비용 부담
+
+💡 팁: 미국은 식품 안전 규제가 매우 엄격하므로 사전 준비가 중요합니다."""
             else:
                 return "미국 라면 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
         
-        elif '리스크' in query_lower or '위험' in query_lower:
+        elif '리스크' in query_lower or '위험' in query_lower or '주의사항' in query_lower:
             return """미국 수출 주요 리스크:
 
 1. **규제 리스크**
@@ -7498,7 +7562,7 @@ def process_simple_natural_language_query(query):
 구체적인 품목을 알려주시면 더 상세한 정보를 제공해드릴 수 있습니다."""
     
     # 일반적인 질문
-    elif '리스크' in query_lower or '위험' in query_lower:
+    elif '리스크' in query_lower or '위험' in query_lower or '주의사항' in query_lower:
         return """수출 일반 주요 리스크:
 
 1. **규제 리스크**
