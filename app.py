@@ -2982,12 +2982,11 @@ def test_compliance_api():
                     'success': False,
                     'message': '테스트를 위해 JSON 데이터를 포함해주세요.'
                 }), 400
-        except Exception as e:
+        except Exception:
             return jsonify({
                 'error': '잘못된 JSON 형식입니다.',
                 'success': False,
-                'message': '올바른 JSON 형식으로 요청해주세요.',
-                'details': str(e)
+                'message': '올바른 JSON 형식으로 요청해주세요.'
             }), 400
         
         country = data.get('country', '중국')
@@ -3136,10 +3135,10 @@ def test_document_generation():
                 }
             })
             
-        except Exception as e:
-            print(f"❌ 테스트 PDF 생성 실패: {e}")
+        except Exception:
+            print(f"❌ 테스트 PDF 생성 실패")
             return jsonify({
-                'error': f'테스트 PDF 생성 실패: {str(e)}',
+                'error': '테스트 PDF 생성 실패',
                 'success': False
             })
         
@@ -3149,10 +3148,6 @@ def test_document_generation():
             'error': f'테스트 중 오류가 발생했습니다: {str(e)}',
             'success': False
         })
-        print(f"❌ 준수성 분석 오류: {str(e)}")
-        import traceback
-        print(f"📋 상세 오류: {traceback.format_exc()}")
-        return jsonify({'error': f'분석 중 오류가 발생했습니다: {str(e)}'})
 
 def perform_ocr_analysis(file_path, document_type):
     """OCR 분석 수행"""
