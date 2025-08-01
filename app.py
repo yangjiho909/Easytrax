@@ -651,7 +651,6 @@ class WebMVPCustomsAnalyzer:
                 'expansions': {}
             }
 print('앱 시작')
-
 class WebMVPSystem:
     """웹용 MVP 통합 시스템"""
     
@@ -5213,7 +5212,6 @@ def create_simple_test_label(country, product_info):
 - 钠 (나트륨): {product_info.get('nutrition', {}).get('sodium', '800')}mg
 알레르기 정보:
 {', '.join(translate_allergies(product_info.get('allergies', []), '중국'))}
-
 ※ 폰트 로드 실패로 텍스트만 생성되었습니다.
    배포 환경에서 중국어 폰트 설치가 필요합니다."""
                 else:
