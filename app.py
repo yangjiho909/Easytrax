@@ -2935,10 +2935,326 @@ def analyze_basic_ingredient_list(text_content, tables):
         'text': text_content
     }, 500
 
+def calculate_dynamic_compliance_score(country, product_type, company_info, product_info):
+    """사용자 입력 기반 동적 준수성 점수 계산"""
+    print(f"🎯 동적 점수 계산 시작: {country} {product_type}")
+    
+    # 점수 초기화
+    total_score = 0
+    max_score = 100
+    critical_issues = []
+    major_issues = []
+    minor_issues = []
+    suggestions = []
+    score_breakdown = {}
+    
+    # 1. 회사 정보 검증 (20점)
+    company_score = 0
+    company_issues = []
+    
+    if company_info:
+        # 회사명 검증
+        if company_info.get('name'):
+            company_score += 5
+        else:
+            company_issues.append("회사명이 입력되지 않았습니다")
+            
+        # 주소 검증
+        if company_info.get('address'):
+            company_score += 5
+        else:
+            company_issues.append("회사 주소가 입력되지 않았습니다")
+            
+        # 연락처 검증
+        if company_info.get('phone') or company_info.get('email'):
+            company_score += 5
+        else:
+            company_issues.append("연락처 정보가 입력되지 않았습니다")
+            
+        # 사업자등록번호 검증
+        if company_info.get('business_number'):
+            company_score += 5
+        else:
+            company_issues.append("사업자등록번호가 입력되지 않았습니다")
+    else:
+        company_issues.append("회사 정보가 입력되지 않았습니다")
+    
+    score_breakdown['company_info'] = {
+        'score': company_score,
+        'max_score': 20,
+        'issues': company_issues
+    }
+    
+    # 2. 제품 정보 검증 (30점)
+    product_score = 0
+    product_issues = []
+    
+    if product_info:
+        # 제품명 검증
+        if product_info.get('name'):
+            product_score += 10
+        else:
+            product_issues.append("제품명이 입력되지 않았습니다")
+            
+        # 제품 분류 검증
+        if product_info.get('category'):
+            product_score += 5
+        else:
+            product_issues.append("제품 분류가 입력되지 않았습니다")
+            
+        # 원산지 검증
+        if product_info.get('origin'):
+            if product_info.get('origin') == '한국':
+                product_score += 10
+            else:
+                product_issues.append("원산지가 한국으로 설정되지 않았습니다")
+        else:
+            product_issues.append("원산지가 입력되지 않았습니다")
+            
+        # 제조일자/유통기한 검증
+        if product_info.get('manufacturing_date') or product_info.get('expiry_date'):
+            product_score += 5
+        else:
+            product_issues.append("제조일자 또는 유통기한이 입력되지 않았습니다")
+    else:
+        product_issues.append("제품 정보가 입력되지 않았습니다")
+    
+    score_breakdown['product_info'] = {
+        'score': product_score,
+        'max_score': 30,
+        'issues': product_issues
+    }
+    
+    # 3. 영양성분 정보 검증 (25점)
+    nutrition_score = 0
+    nutrition_issues = []
+    
+    nutrition_info = product_info.get('nutrition', {})
+    if nutrition_info:
+        # 열량 정보
+        if nutrition_info.get('calories'):
+            nutrition_score += 5
+        else:
+            nutrition_issues.append("열량 정보가 입력되지 않았습니다")
+            
+        # 단백질 정보
+        if nutrition_info.get('protein'):
+            nutrition_score += 5
+        else:
+            nutrition_issues.append("단백질 정보가 입력되지 않았습니다")
+            
+        # 지방 정보
+        if nutrition_info.get('fat'):
+            nutrition_score += 5
+        else:
+            nutrition_issues.append("지방 정보가 입력되지 않았습니다")
+            
+        # 탄수화물 정보
+        if nutrition_info.get('carbs'):
+            nutrition_score += 5
+        else:
+            nutrition_issues.append("탄수화물 정보가 입력되지 않았습니다")
+            
+        # 나트륨 정보
+        if nutrition_info.get('sodium'):
+            nutrition_score += 5
+        else:
+            nutrition_issues.append("나트륨 정보가 입력되지 않았습니다")
+    else:
+        nutrition_issues.append("영양성분 정보가 입력되지 않았습니다")
+    
+    score_breakdown['nutrition_info'] = {
+        'score': nutrition_score,
+        'max_score': 25,
+        'issues': nutrition_issues
+    }
+    
+    # 4. 알레르기 정보 검증 (15점)
+    allergy_score = 0
+    allergy_issues = []
+    
+    allergies = product_info.get('allergies', [])
+    if allergies:
+        allergy_score += 15
+    else:
+        allergy_issues.append("알레르기 정보가 입력되지 않았습니다")
+    
+    score_breakdown['allergy_info'] = {
+        'score': allergy_score,
+        'max_score': 15,
+        'issues': allergy_issues
+    }
+    
+    # 5. 국가별 특별 요구사항 검증 (10점)
+    country_score = 0
+    country_issues = []
+    
+    if country == "중국":
+        # 중국어 라벨 요구사항
+        if product_info.get('chinese_label'):
+            country_score += 5
+        else:
+            country_issues.append("중국어 라벨 정보가 입력되지 않았습니다")
+            
+        # 중국 식품안전인증 요구사항
+        if product_info.get('chinese_certification'):
+            country_score += 5
+        else:
+            country_issues.append("중국 식품안전인증 정보가 입력되지 않았습니다")
+            
+    elif country == "미국":
+        # FDA 등록 요구사항
+        if product_info.get('fda_registration'):
+            country_score += 5
+        else:
+            country_issues.append("FDA 등록 정보가 입력되지 않았습니다")
+            
+        # 미국 라벨 요구사항
+        if product_info.get('us_label'):
+            country_score += 5
+        else:
+            country_issues.append("미국 라벨 정보가 입력되지 않았습니다")
+    
+    score_breakdown['country_requirements'] = {
+        'score': country_score,
+        'max_score': 10,
+        'issues': country_issues
+    }
+    
+    # 총점 계산
+    total_score = company_score + product_score + nutrition_score + allergy_score + country_score
+    
+    # 이슈 분류
+    all_issues = []
+    all_issues.extend(company_issues)
+    all_issues.extend(product_issues)
+    all_issues.extend(nutrition_issues)
+    all_issues.extend(allergy_issues)
+    all_issues.extend(country_issues)
+    
+    # 이슈 심각도 분류
+    for issue in all_issues:
+        if "입력되지 않았습니다" in issue:
+            if "회사명" in issue or "원산지" in issue or "제품명" in issue:
+                critical_issues.append(issue)
+            elif "영양성분" in issue or "알레르기" in issue:
+                major_issues.append(issue)
+            else:
+                minor_issues.append(issue)
+        else:
+            minor_issues.append(issue)
+    
+    # 개선 제안 생성
+    if critical_issues:
+        suggestions.append("🚨 긴급 개선사항: 필수 정보를 입력해주세요")
+    if major_issues:
+        suggestions.append("⚠️ 주요 개선사항: 영양성분 및 알레르기 정보를 입력해주세요")
+    if minor_issues:
+        suggestions.append("💡 권장사항: 추가 정보를 입력하여 더 정확한 분석을 받으세요")
+    
+    if total_score >= 90:
+        suggestions.append("✅ 우수한 준수성입니다. 문서 업로드로 더 정확한 분석을 받으세요")
+    elif total_score >= 70:
+        suggestions.append("⚠️ 부분 준수 상태입니다. 누락된 정보를 입력해주세요")
+    else:
+        suggestions.append("❌ 미준수 상태입니다. 필수 정보를 모두 입력해주세요")
+    
+    return {
+        'overall_score': total_score,
+        'critical_issues': critical_issues,
+        'major_issues': major_issues,
+        'minor_issues': minor_issues,
+        'critical_issues_count': len(critical_issues),
+        'major_issues_count': len(major_issues),
+        'minor_issues_count': len(minor_issues),
+        'suggestions': suggestions,
+        'score_breakdown': score_breakdown
+    }
+
+def generate_dynamic_checklist(country, product_type, company_info, product_info):
+    """사용자 입력 기반 동적 체크리스트 생성"""
+    checklist = []
+    
+    # 기본 체크리스트
+    checklist.append("제품 라벨에 필수 정보 포함 여부")
+    checklist.append("영양성분표 작성 여부")
+    checklist.append("알레르기 정보 표시 여부")
+    checklist.append("원산지 표시 여부")
+    checklist.append("유통기한 표시 여부")
+    checklist.append("제조업체 정보 표시 여부")
+    
+    # 회사 정보 관련
+    if not company_info.get('name'):
+        checklist.append("✅ 회사명 입력 필요")
+    if not company_info.get('address'):
+        checklist.append("✅ 회사 주소 입력 필요")
+    if not company_info.get('phone') and not company_info.get('email'):
+        checklist.append("✅ 연락처 정보 입력 필요")
+    
+    # 제품 정보 관련
+    if not product_info.get('name'):
+        checklist.append("✅ 제품명 입력 필요")
+    if not product_info.get('origin'):
+        checklist.append("✅ 원산지 입력 필요")
+    
+    # 영양성분 관련
+    nutrition_info = product_info.get('nutrition', {})
+    if not nutrition_info.get('calories'):
+        checklist.append("✅ 열량 정보 입력 필요")
+    if not nutrition_info.get('protein'):
+        checklist.append("✅ 단백질 정보 입력 필요")
+    if not nutrition_info.get('fat'):
+        checklist.append("✅ 지방 정보 입력 필요")
+    
+    # 국가별 특별 요구사항
+    if country == "중국":
+        checklist.append("중국어 라벨 준비 여부")
+        checklist.append("중국 식품안전인증서 준비 여부")
+    elif country == "미국":
+        checklist.append("FDA 등록 여부")
+        checklist.append("미국 라벨 규정 준수 여부")
+    
+    return checklist
+
+def generate_dynamic_correction_guide(country, product_type, company_info, product_info, score_calculation):
+    """사용자 입력 기반 동적 수정 안내 생성"""
+    guide = {}
+    
+    # 회사 정보 안내
+    if score_calculation['score_breakdown']['company_info']['score'] < 20:
+        guide["회사 정보"] = "회사명, 주소, 연락처, 사업자등록번호를 모두 입력해주세요."
+    
+    # 제품 정보 안내
+    if score_calculation['score_breakdown']['product_info']['score'] < 30:
+        guide["제품 정보"] = "제품명, 분류, 원산지(한국), 제조일자/유통기한을 입력해주세요."
+    
+    # 영양성분 안내
+    if score_calculation['score_breakdown']['nutrition_info']['score'] < 25:
+        guide["영양성분표"] = "열량, 단백질, 지방, 탄수화물, 나트륨 정보를 입력해주세요."
+    
+    # 알레르기 안내
+    if score_calculation['score_breakdown']['allergy_info']['score'] < 15:
+        guide["알레르기 정보"] = "알레르기 유발 원료 정보를 입력해주세요."
+    
+    # 국가별 특별 안내
+    if country == "중국":
+        if score_calculation['score_breakdown']['country_requirements']['score'] < 10:
+            guide["중국 특별 요구사항"] = "중국어 라벨과 식품안전인증서 정보를 입력해주세요."
+    elif country == "미국":
+        if score_calculation['score_breakdown']['country_requirements']['score'] < 10:
+            guide["미국 특별 요구사항"] = "FDA 등록과 미국 라벨 규정 준수 정보를 입력해주세요."
+    
+    # 일반 안내
+    guide["문서 업로드"] = "실제 문서를 업로드하여 더 정확한 분석을 받으세요."
+    
+    return guide
+
 def perform_basic_compliance_analysis(country, product_type, company_info, product_info):
-    """문서 없이 기본 준수성 분석 수행"""
+    """문서 없이 기본 준수성 분석 수행 - 사용자 입력 기반 동적 점수 계산"""
     try:
         print("📋 기본 준수성 분석 시작...")
+        print(f"🏢 회사 정보: {company_info}")
+        print(f"📦 제품 정보: {product_info}")
         
         # 기본 규제 정보 로드
         regulations = {}
@@ -2970,46 +3286,42 @@ def perform_basic_compliance_analysis(country, product_type, company_info, produ
                 "주의사항": ["라벨 미표기 시 반송", "원산지 미표기 시 반송"]
             }
         
-        # 기본 체크리스트 생성
-        basic_checklist = [
-            "제품 라벨에 필수 정보 포함 여부",
-            "영양성분표 작성 여부",
-            "알레르기 정보 표시 여부",
-            "원산지 표시 여부",
-            "유통기한 표시 여부",
-            "제조업체 정보 표시 여부"
-        ]
+        # 사용자 입력 기반 동적 점수 계산
+        score_calculation = calculate_dynamic_compliance_score(country, product_type, company_info, product_info)
         
-        # 기본 수정 안내
-        basic_guide = {
-            "라벨": f"{country} 라면 라벨 규정에 따라 필수 정보를 포함해야 합니다.",
-            "영양성분표": "영양성분표는 해당 국가 규정에 맞게 작성해야 합니다.",
-            "문서": "필요한 증명서들을 준비해야 합니다."
-        }
+        # 동적 체크리스트 생성
+        dynamic_checklist = generate_dynamic_checklist(country, product_type, company_info, product_info)
+        
+        # 동적 수정 안내 생성
+        dynamic_guide = generate_dynamic_correction_guide(country, product_type, company_info, product_info, score_calculation)
         
         result = {
             'success': True,
             'analysis_summary': {
                 'total_documents': 0,
                 'analyzed_documents': [],
-                'compliance_score': 50,  # 기본 점수
-                'critical_issues': 0,
-                'major_issues': 0,
-                'minor_issues': 0
+                'compliance_score': score_calculation['overall_score'],
+                'critical_issues': score_calculation['critical_issues_count'],
+                'major_issues': score_calculation['major_issues_count'],
+                'minor_issues': score_calculation['minor_issues_count']
             },
-            'structured_data': {},
+            'structured_data': {
+                'company_info': company_info,
+                'product_info': product_info
+            },
             'ocr_results': {},
             'regulation_matching': regulations,
             'compliance_analysis': {
-                'overall_score': 50,
-                'critical_issues': [],
-                'major_issues': [],
-                'minor_issues': [],
-                'suggestions': ["문서를 업로드하여 더 정확한 분석을 받으세요."]
+                'overall_score': score_calculation['overall_score'],
+                'critical_issues': score_calculation['critical_issues'],
+                'major_issues': score_calculation['major_issues'],
+                'minor_issues': score_calculation['minor_issues'],
+                'suggestions': score_calculation['suggestions'],
+                'score_breakdown': score_calculation['score_breakdown']
             },
-            'checklist': basic_checklist,
-            'correction_guide': basic_guide,
-            'message': f'{country} {product_type} 기본 규제 준수성 분석이 완료되었습니다. 문서를 업로드하면 더 정확한 분석을 받을 수 있습니다.'
+            'checklist': dynamic_checklist,
+            'correction_guide': dynamic_guide,
+            'message': f'{country} {product_type} 규제 준수성 분석이 완료되었습니다. (점수: {score_calculation["overall_score"]}점)'
         }
         
         return jsonify(result)
@@ -4854,12 +5166,18 @@ def create_simple_test_label(country, product_info):
         # 국가별 폰트 경로 (우선순위 순)
         if country == "중국":
             font_paths = [
-                # 배포 환경용 폰트 경로 (우선)
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Linux
-                "/System/Library/Fonts/PingFang.ttc",  # macOS
-                "/System/Library/Fonts/Helvetica.ttc",  # macOS
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto
+                # 프로젝트 내 폰트 폴더 (배포 환경용, 최우선)
+                "fonts/msyh.ttc",                    # Microsoft YaHei (중국어, 영어, 한글)
+                "fonts/simsun.ttc",                  # SimSun (중국어, 영어)
+                "fonts/simhei.ttf",                  # SimHei (중국어)
+                "fonts/malgun.ttf",                  # 맑은 고딕 (한글)
+                # Linux 시스템 폰트 (배포 환경용)
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto CJK
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",         # Linux DejaVu
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Linux Liberation
+                # macOS 시스템 폰트
+                "/System/Library/Fonts/PingFang.ttc",  # macOS PingFang
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS Helvetica
                 # Windows 폰트 경로 (로컬 환경용)
                 "C:/Windows/Fonts/msyh.ttc",        # Microsoft YaHei (중국어, 영어, 한글)
                 "C:/Windows/Fonts/simsun.ttc",      # SimSun (중국어, 영어)
@@ -4870,20 +5188,10 @@ def create_simple_test_label(country, product_info):
                 "C:/Windows/Fonts/malgun.ttf",      # 맑은 고딕 (한글)
                 "C:/Windows/Fonts/gulim.ttc",       # 굴림 (한글)
                 "C:/Windows/Fonts/arial.ttf",       # Arial (영어)
-                # 상대 경로 폰트 (배포 환경용)
-                "fonts/msyh.ttc",
-                "fonts/simsun.ttc",
-                "fonts/msyhbd.ttc",
-                "fonts/simhei.ttf",
-                "fonts/simkai.ttf",
-                "fonts/simfang.ttf",
-                "fonts/malgun.ttf",
+                # 상대 경로 폰트 (현재 디렉토리)
                 "msyh.ttc",
                 "simsun.ttc",
-                "msyhbd.ttc",
                 "simhei.ttf",
-                "simkai.ttf",
-                "simfang.ttf",
                 "malgun.ttf"
             ]
         else:  # 미국
@@ -4915,14 +5223,39 @@ def create_simple_test_label(country, product_info):
                 print(f"❌ 기본 폰트도 실패: {default_font_error}")
                 # 배포 환경용 최종 폴백: 텍스트만 생성
                 print("⚠️ 폰트 로드 완전 실패, 텍스트만 반환")
+                
+                # 중국어 라벨의 경우 텍스트 내용을 중국어로 생성
+                if country == "중국":
+                    label_text = f"""중국어 영양성분표 (폰트 로드 실패)
+
+제품명: {product_info.get('product_name', 'N/A')}
+제조사: {product_info.get('manufacturer', 'N/A')}
+원산지: 韩国制造 (한국산)
+
+영양성분표 (每100g):
+- 能量 (열량): {product_info.get('nutrition', {}).get('calories', '400')} kcal
+- 蛋白质 (단백질): {product_info.get('nutrition', {}).get('protein', '12')}g
+- 脂肪 (지방): {product_info.get('nutrition', {}).get('fat', '15')}g
+- 碳水化合物 (탄수화물): {product_info.get('nutrition', {}).get('carbs', '60')}g
+- 钠 (나트륨): {product_info.get('nutrition', {}).get('sodium', '800')}mg
+
+알레르기 정보:
+{', '.join(translate_allergies(product_info.get('allergies', []), '중국'))}
+
+※ 폰트 로드 실패로 텍스트만 생성되었습니다.
+   배포 환경에서 중국어 폰트 설치가 필요합니다."""
+                else:
+                    label_text = f"라벨 생성 완료 (폰트 로드 실패: {default_font_error})"
+                
                 return jsonify({
                     'success': True,
                     'label_data': {
-                        'text_content': f"라벨 생성 완료 (폰트 로드 실패: {default_font_error})",
+                        'text_content': label_text,
                         'image_path': None,
                         'filename': None,
                         'country': country,
-                        'label_type': 'text_only'
+                        'label_type': 'text_only',
+                        'font_error': str(default_font_error)
                     },
                     'ocr_info': {
                         'processed_files': 0,
