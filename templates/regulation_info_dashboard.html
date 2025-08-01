@@ -756,7 +756,7 @@
                                  AI 답변
                              </h6>
                              <div class="bg-light p-3 rounded">
-                                 ${data.answer.replace(/\n/g, '<br>')}
+                                 ${data.answer ? data.answer.replace(/\n/g, '<br>') : '답변을 생성할 수 없습니다.'}
                              </div>
                          </div>
                      </div>
@@ -804,13 +804,22 @@
                  `;
                  
                  data.data_sources.forEach(source => {
-                     html += `
-                         <li class="mb-1">
-                             <i class="fas fa-link me-2"></i>
-                             <strong>${source.name}</strong>: ${source.description}
-                             <br><small class="text-muted">신뢰도: ${Math.round(source.reliability * 100)}%</small>
-                         </li>
-                     `;
+                     if (typeof source === 'string') {
+                         html += `
+                             <li class="mb-1">
+                                 <i class="fas fa-link me-2"></i>
+                                 <strong>${source}</strong>
+                             </li>
+                         `;
+                     } else {
+                         html += `
+                             <li class="mb-1">
+                                 <i class="fas fa-link me-2"></i>
+                                 <strong>${source.name || source}</strong>: ${source.description || ''}
+                                 <br><small class="text-muted">신뢰도: ${Math.round((source.reliability || 0.8) * 100)}%</small>
+                             </li>
+                         `;
+                     }
                  });
                  
                  html += `

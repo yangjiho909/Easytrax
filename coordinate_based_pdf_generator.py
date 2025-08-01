@@ -191,13 +191,22 @@ class CoordinateBasedPDFGenerator:
                                 fontname="helv"
                             )
                     else:
-                        # 일반 텍스트 삽입
-                        page.insert_text(
-                            point=(x, y),
-                            text=text,
-                            fontsize=font_size,
-                            fontname="helv"
-                        )
+                        # 일반 텍스트 삽입 - 한글 폰트 사용
+                        try:
+                            page.insert_text(
+                                point=(x, y),
+                                text=text,
+                                fontsize=font_size,
+                                fontname="KoreanFont"  # 한글 폰트 사용
+                            )
+                        except:
+                            # 한글 폰트 실패 시 기본 폰트 사용
+                            page.insert_text(
+                                point=(x, y),
+                                text=text,
+                                fontsize=font_size,
+                                fontname="helv"
+                            )
                 else:
                     print(f"⚠️ 데이터 없음: {field_name}")
             
@@ -247,11 +256,18 @@ class CoordinateBasedPDFGenerator:
                     font_size = field_data.get("font_size", 12)
                     text = str(data[field_name])
                     
-                    # 폰트 설정
-                    if font_size > 14:
-                        c.setFont("Helvetica-Bold", font_size)
-                    else:
-                        c.setFont("Helvetica", font_size)
+                    # 폰트 설정 - 한글 폰트 우선 사용
+                    try:
+                        if font_size > 14:
+                            c.setFont("KoreanFont", font_size)
+                        else:
+                            c.setFont("KoreanFont", font_size)
+                    except:
+                        # 한글 폰트 실패 시 기본 폰트 사용
+                        if font_size > 14:
+                            c.setFont("Helvetica-Bold", font_size)
+                        else:
+                            c.setFont("Helvetica", font_size)
                     
                     # 텍스트 삽입
                     c.drawString(x, y, text)
