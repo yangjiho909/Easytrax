@@ -2684,7 +2684,6 @@ def api_compliance_analysis():
                 'success': False
             })
 
-
 def perform_optimized_compliance_analysis(country, product_type, uploaded_files, uploaded_documents, company_info, product_info):
     """최적화된 OCR/문서분석 기반 준수성 분석"""
     try:
