@@ -38,6 +38,86 @@ FEATURE_FLAGS = {
 print(f"🚀 KATI 시스템 시작 - 환경: {ENVIRONMENT}")
 print(f"📊 기능 플래그: {FEATURE_FLAGS}")
 
+# 기본 데이터
+SAMPLE_REGULATIONS = {
+    "중국": {
+        "라면": {
+            "영양성분표": "GB 7718-2025 규정 준수 필요",
+            "알레르기": "8대 알레르기 원료 표시 필수",
+            "성분표": "원료명칭 및 함량 표시",
+            "포장": "식품안전 포장재 사용"
+        }
+    },
+    "미국": {
+        "라면": {
+            "영양성분표": "FDA 규정 준수 필요",
+            "알레르기": "9대 알레르기 원료 표시 필수",
+            "성분표": "영양성분표 필수",
+            "포장": "FDA 승인 포장재 사용"
+        }
+    }
+}
+
+# 샘플 무역 통계 데이터
+sample_trade_stats = [
+    {
+        "country": "중국",
+        "product": "라면",
+        "export_volume": 1000,
+        "export_value": 50000,
+        "growth_rate": 15.5,
+        "period": "2024-12"
+    },
+    {
+        "country": "미국",
+        "product": "라면",
+        "export_volume": 800,
+        "export_value": 40000,
+        "growth_rate": 12.3,
+        "period": "2024-12"
+    }
+]
+
+# 샘플 시장 분석 데이터
+sample_market_analysis = [
+    {
+        "country": "중국",
+        "product": "라면",
+        "market_size": "대규모",
+        "growth_potential": "높음",
+        "competition_level": "높음",
+        "regulatory_complexity": "복잡"
+    },
+    {
+        "country": "미국",
+        "product": "라면",
+        "market_size": "중간",
+        "growth_potential": "중간",
+        "competition_level": "중간",
+        "regulatory_complexity": "보통"
+    }
+]
+
+# 샘플 규제 데이터
+sample_regulations = [
+    {
+        "country": "중국",
+        "product_type": "라면",
+        "regulation_type": "식품안전",
+        "regulation_code": "GB 7718-2011",
+        "description": "식품안전국가표준",
+        "compliance_required": True
+    },
+    {
+        "country": "미국",
+        "product_type": "라면",
+        "regulation_type": "식품안전",
+        "regulation_code": "FDA 21 CFR",
+        "description": "미국 식품의약품청 규정",
+        "compliance_required": True
+    }
+]
+
 # 무료 시스템 import
 try:
     from cloud_storage import cloud_storage
@@ -348,7 +428,6 @@ try:
 except ImportError as e:
     print(f"⚠️ 고급 키워드 확장기를 찾을 수 없습니다: {e}")
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'kati_mvp_secret_key_2024')
 
 # 업로드 폴더 설정 (Heroku 호환)
@@ -571,6 +650,7 @@ class WebMVPCustomsAnalyzer:
                 'original_words': user_input.split(),
                 'expansions': {}
             }
+print('앱 시작')
 
 class WebMVPSystem:
     """웹용 MVP 통합 시스템"""
@@ -676,7 +756,7 @@ class WebMVPSystem:
                     "허용기준": ["식품안전인증 필요", "원산지 명시 필수", "유통기한 표기 필수"]
                 }
                 print(f"✅ 기본 규제 정보 설정 완료: {len(regulations)}개 항목")  # 디버그 로그 추가
-                
+        
         except Exception as e:
             print(f"❌ 규제 정보 조회 중 오류: {str(e)}")  # 디버그 로그 추가
             # 폴백: MVP 규제 정보 사용
@@ -698,7 +778,7 @@ class WebMVPSystem:
                     "허용기준": ["식품안전인증 필요", "원산지 명시 필수", "유통기한 표기 필수"]
                 }
                 print(f"✅ 기본 규제 정보 설정 완료: {len(regulations)}개 항목")  # 디버그 로그 추가
-        
+
         if not regulations:
             analysis["critical_issues"].append("규제 정보를 찾을 수 없습니다.")
             return analysis
@@ -1341,7 +1421,6 @@ def check_packaging_regulations(extracted_data, country, regulations):
     }
     
     return results
-
 def check_manufacturing_regulations(extracted_data, country, regulations):
     """제조/유통 정보 규제 점검"""
     manufacturing_regs = regulations.get('manufacturing', {})
@@ -2058,7 +2137,6 @@ def index():
 def dashboard():
     """대시보드 페이지"""
     return render_template('dashboard.html')
-
 @app.route('/api/dashboard-stats')
 @monitor_performance('dashboard_stats')
 def api_dashboard_stats():
@@ -2592,7 +2670,6 @@ def api_compliance_analysis():
                     print(f"⚠️ 임시 파일 삭제 실패: {e}")
             
             return result
-            
         except Exception as e:
             # 임시 파일 정리 (오류 발생 시에도)
             for file_info in uploaded_files:
@@ -2602,13 +2679,11 @@ def api_compliance_analysis():
                 except Exception:
                     pass
             
-            raise e
-    except Exception as e:
-        print(f"❌ 준수성 분석 오류: {str(e)}")
-        return jsonify({
-            'error': f'분석 중 오류가 발생했습니다: {str(e)}',
-            'success': False
-        })
+            print(f"❌ 준수성 분석 오류: {str(e)}")
+            return jsonify({
+                'error': f'분석 중 오류가 발생했습니다: {str(e)}',
+                'success': False
+            })
 
 
 def perform_optimized_compliance_analysis(country, product_type, uploaded_files, uploaded_documents, company_info, product_info):
@@ -2637,7 +2712,6 @@ def perform_optimized_compliance_analysis(country, product_type, uploaded_files,
                 
                 # 메모리 정리
                 del ocr_result
-                
             except Exception as e:
                 print(f"⚠️ {doc_type} 분석 실패: {e}")
                 ocr_results[doc_type] = {'error': str(e)}
@@ -2773,6 +2847,16 @@ def perform_lightweight_ocr_analysis(file_path, document_type):
         print(f"⚠️ 가벼운 OCR 분석 실패: {e}")
         return {'error': str(e), 'text': '', 'tables': []}
 
+def extract_generic_data(file_path):
+    """일반 파일에서 데이터 추출"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return {'text': content, 'tables': []}
+    except Exception as e:
+        print(f"⚠️ 일반 파일 데이터 추출 실패: {e}")
+        return {'text': '', 'tables': []}
+
 def extract_basic_structured_data(ocr_result, document_type):
     """기본 구조화된 데이터 추출 (간소화)"""
     try:
@@ -2835,9 +2919,9 @@ def analyze_optimized_compliance_issues(structured_data, regulation_matching, co
                 f"{country} 현지 대리인과 상담 권장",
                 "사전 검증 서비스 이용",
                 "규제 전문가 자문 구하기"
-            ]
-        }
-        
+                ]
+            }
+            
     except Exception as e:
         print(f"⚠️ 최적화된 준수성 분석 실패: {e}")
         return {
@@ -2847,7 +2931,6 @@ def analyze_optimized_compliance_issues(structured_data, regulation_matching, co
             'minor_issues': [],
             'suggestions': ["문서를 다시 확인해주세요"]
         }
-
 def generate_basic_compliance_checklist(compliance_analysis, country, product_type):
     """기본 준수성 체크리스트"""
     try:
@@ -3647,7 +3730,6 @@ def analyze_label_document(text_content, tables):
             result['manufacturer_info'] = text
     
     return result
-
 def analyze_ingredient_list(text_content, tables):
     """원료리스트 분석"""
     result = {
@@ -4331,112 +4413,6 @@ def api_document_generation():
                 'documents': documents,
                 'pdf_error': str(pdf_error)
             })
-    except Exception as e:
-        print(f"❌ 서류생성 API 오류: {str(e)}")  # 디버그 로그 추가
-        import traceback
-        print(f"📋 상세 오류: {traceback.format_exc()}")  # 디버그 로그 추가
-        return jsonify({'error': f'서류 생성 중 오류가 발생했습니다: {str(e)}'})
-
-@app.route('/nutrition-label')
-def nutrition_label():
-    """영양정보 라벨 생성 페이지"""
-    return render_template('nutrition_label.html')
-
-@app.route('/api/nutrition-label', methods=['POST'])
-def api_nutrition_label():
-    """영양정보 라벨 생성 API (OCR + 사용자 입력 통합)"""
-    print("🔍 API 호출됨: /api/nutrition-label")  # 디버그 로그 추가
-    
-    # 파일 업로드가 있는지 확인
-    if 'files' in request.files:
-        print("📁 파일 업로드 모드 감지")
-        return handle_file_upload_mode()
-    else:
-        print("📝 JSON 모드 감지")
-        return handle_json_mode()
-
-def handle_file_upload_mode():
-    """파일 업로드 모드 처리"""
-    try:
-        # 파일들 가져오기
-        files = request.files.getlist('files')
-        if not files or files[0].filename == '':
-            return jsonify({'error': '업로드된 파일이 없습니다.'})
-        
-        print(f"📁 업로드된 파일 수: {len(files)}")
-        
-        # FormData에서 기본 정보 가져오기
-        country = request.form.get('country', '')
-        product_name = request.form.get('product_name', '')
-        calories = request.form.get('calories', '')
-        protein = request.form.get('protein', '')
-        fat = request.form.get('fat', '')
-        carbs = request.form.get('carbs', '')
-        sodium = request.form.get('sodium', '')
-        sugar = request.form.get('sugar', '')
-        fiber = request.form.get('fiber', '')
-        serving_size = request.form.get('serving_size', '')
-        allergies = request.form.get('allergies', '')
-        
-        print(f"📥 FormData 정보: country={country}, product_name={product_name}")
-        
-        if not country:
-            return jsonify({'error': '국가를 선택해주세요.'})
-        
-        # OCR 처리
-        ocr_extracted_info = process_uploaded_files(files)
-        print(f"🔍 OCR 추출 결과: {ocr_extracted_info}")
-        
-        # 사용자 입력 정보 구성
-        product_info = {
-            'name': product_name,
-            'nutrition': {
-                'calories': calories,
-                'protein': protein,
-                'fat': fat,
-                'carbs': carbs,
-                'sodium': sodium,
-                'sugar': sugar,
-                'fiber': fiber,
-                'serving_size': serving_size
-            },
-            'allergies': [allergy.strip() for allergy in allergies.split(',') if allergy.strip()]
-        }
-        
-        # OCR 추출 정보와 사용자 입력 정보 통합
-        merged_product_info = merge_ocr_and_user_input(product_info, ocr_extracted_info)
-        print(f"🔗 통합된 제품 정보: {merged_product_info}")
-        
-        # 라벨 생성
-        return generate_label(country, merged_product_info, ocr_extracted_info)
-        
-    except Exception as e:
-        print(f"❌ 파일 업로드 모드 오류: {str(e)}")
-        return jsonify({'error': f'파일 처리 중 오류가 발생했습니다: {str(e)}'})
-
-def handle_json_mode():
-    """JSON 모드 처리 (기존 방식)"""
-    try:
-        data = request.get_json()
-        print(f"📥 받은 JSON 데이터: {data}")
-        
-        country = data.get('country', '')
-        product_info = data.get('product_info', {})
-        ocr_extracted_info = data.get('ocr_extracted_info', {})
-        
-        if not country:
-            return jsonify({'error': '국가를 선택해주세요.'})
-        
-        # OCR 추출 정보와 사용자 입력 정보 통합
-        merged_product_info = merge_ocr_and_user_input(product_info, ocr_extracted_info)
-        print(f"🔗 통합된 제품 정보: {merged_product_info}")
-        
-        # 라벨 생성
-        return generate_label(country, merged_product_info, {})
-        
-    except Exception as e:
-        print(f"❌ JSON 모드 오류: {str(e)}")
-        return jsonify({'error': f'라벨 생성 중 오류가 발생했습니다: {str(e)}'})
 
 def process_uploaded_files(files):
     """업로드된 파일들을 OCR 처리 (개선된 버전)"""
@@ -4545,7 +4521,6 @@ def try_multiple_ocr_services(file_path, image):
             continue
     
     return ""
-
 def try_ocr_space(file_path, image):
     """OCR.space 무료 API 사용"""
     try:
@@ -5226,19 +5201,16 @@ def create_simple_test_label(country, product_info):
                 
                 # 중국어 라벨의 경우 텍스트 내용을 중국어로 생성
                 if country == "중국":
-                    label_text = f"""중국어 영양성분표 (폰트 로드 실패)
-
+                    label_text = f"""中国어 영양성분표 (폰트 로드 실패)
 제품명: {product_info.get('product_name', 'N/A')}
 제조사: {product_info.get('manufacturer', 'N/A')}
 원산지: 韩国制造 (한국산)
-
 영양성분표 (每100g):
 - 能量 (열량): {product_info.get('nutrition', {}).get('calories', '400')} kcal
 - 蛋白质 (단백질): {product_info.get('nutrition', {}).get('protein', '12')}g
 - 脂肪 (지방): {product_info.get('nutrition', {}).get('fat', '15')}g
 - 碳水化合物 (탄수화물): {product_info.get('nutrition', {}).get('carbs', '60')}g
 - 钠 (나트륨): {product_info.get('nutrition', {}).get('sodium', '800')}mg
-
 알레르기 정보:
 {', '.join(translate_allergies(product_info.get('allergies', []), '중국'))}
 
@@ -5882,8 +5854,160 @@ def api_optimize_ux():
             'error': f'사용자 경험 최적화 중 오류가 발생했습니다: {str(e)}'
         })
 
+@app.route('/api/regulation-status', methods=['GET'])
+def api_regulation_status():
+    """실시간 규제 데이터 상태 확인 API"""
+    try:
+        country = request.args.get('country', '')
+        product_type = request.args.get('product_type', '식품')
+        
+        if not country:
+            return jsonify({
+                'success': False,
+                'error': '국가 파라미터가 필요합니다.'
+            })
+        
+        # 규제 업데이트 상태 조회
+        status = get_regulation_update_status(country, product_type)
+        
+        return jsonify({
+            'success': True,
+            'country': country,
+            'product_type': product_type,
+            'status': status
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'규제 상태 조회 중 오류: {str(e)}'
+        })
 
+@app.route('/api/update-regulations', methods=['POST'])
+def api_update_regulations():
+    """실시간 규제 데이터 업데이트 API"""
+    try:
+        data = request.get_json()
+        country = data.get('country', '')
+        product_type = data.get('product_type', '식품')
+        
+        if not country:
+            return jsonify({
+                'success': False,
+                'error': '국가 파라미터가 필요합니다.'
+            })
+        
+        # 규제 데이터 업데이트
+        success = update_regulation_cache(country, product_type)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'{country} {product_type} 규제 데이터가 업데이트되었습니다.',
+                'country': country,
+                'product_type': product_type
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'{country} {product_type} 규제 데이터 업데이트에 실패했습니다.'
+            })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'규제 업데이트 중 오류: {str(e)}'
+        })
 
+@app.route('/api/ai-ocr-analysis', methods=['POST'])
+def api_ai_ocr_analysis():
+    """AI 기반 OCR 분석 API"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': '파일이 업로드되지 않았습니다.'
+            })
+        
+        file = request.files['file']
+        document_type = request.form.get('document_type', '일반')
+        
+        if file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': '파일이 선택되지 않았습니다.'
+            })
+        
+        # 파일 저장
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_filename = f"{timestamp}_{filename}"
+        filepath = os.path.join('temp_uploads', unique_filename)
+        
+        os.makedirs('temp_uploads', exist_ok=True)
+        file.save(filepath)
+        
+        try:
+            # AI 기반 OCR 분석 수행
+            ai_result = perform_ai_enhanced_ocr_analysis(filepath, document_type)
+            
+            # 임시 파일 삭제
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            
+            return jsonify({
+                'success': True,
+                'document_type': document_type,
+                'analysis_type': ai_result.get('analysis_type', 'ai_enhanced'),
+                'confidence': ai_result.get('confidence', 0.0),
+                'extracted_data': ai_result.get('extracted_data', {}),
+                'text': ai_result.get('text', ''),
+                'tables': ai_result.get('tables', [])
+            })
+            
+        except Exception as e:
+            # 임시 파일 삭제
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            raise e
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'AI OCR 분석 중 오류: {str(e)}'
+        })
+@app.route('/api/dynamic-compliance-analysis', methods=['POST'])
+def api_dynamic_compliance_analysis():
+    """동적 준수성 분석 API"""
+    try:
+        data = request.get_json()
+        country = data.get('country', '')
+        product_type = data.get('product_type', '식품')
+        structured_data = data.get('structured_data', {})
+        
+        if not country:
+            return jsonify({
+                'success': False,
+                'error': '국가 파라미터가 필요합니다.'
+            })
+        
+        # 동적 준수성 분석 수행
+        analysis_result = analyze_optimized_compliance_issues(
+            structured_data, {}, country, product_type
+        )
+        
+        return jsonify({
+            'success': True,
+            'country': country,
+            'product_type': product_type,
+            'analysis': analysis_result
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'동적 준수성 분석 중 오류: {str(e)}'
+        })
 def detect_document_type(filename, extension):
     """문서 타입 자동 감지"""
     filename_lower = filename.lower()
@@ -6062,307 +6186,6 @@ def extract_image_data(filepath):
     except Exception as e:
         print(f"❌ 이미지 추출 오류: {str(e)}")
         data['error'] = str(e)
-    
-    return data
-
-def extract_excel_data(filepath):
-    """엑셀 파일 데이터 추출"""
-    data = {
-        'text_content': [],
-        'tables': [],
-        'numbers': [],
-        'images': [],
-        'metadata': {}
-    }
-    
-    try:
-        import pandas as pd
-        
-        # 모든 시트 읽기
-        excel_file = pd.ExcelFile(filepath)
-        data['metadata']['sheets'] = excel_file.sheet_names
-        
-        for sheet_name in excel_file.sheet_names:
-            df = pd.read_excel(filepath, sheet_name=sheet_name)
-            
-            # 테이블 데이터
-            table_data = df.to_dict('records')
-            data['tables'].append({
-                'sheet': sheet_name,
-                'columns': df.columns.tolist(),
-                'data': table_data
-            })
-            
-            # 텍스트 내용 (헤더 + 첫 몇 행)
-            text_content = f"시트: {sheet_name}\n"
-            text_content += f"컬럼: {', '.join(df.columns.tolist())}\n"
-            text_content += f"행 수: {len(df)}\n"
-            
-            # 첫 5행 데이터
-            for idx, row in df.head().iterrows():
-                text_content += f"행 {idx+1}: {dict(row)}\n"
-            
-            data['text_content'].append({
-                'sheet': sheet_name,
-                'text': text_content
-            })
-            
-            # 숫자 데이터 추출
-            numeric_columns = df.select_dtypes(include=['number']).columns
-            for col in numeric_columns:
-                numbers = df[col].dropna().tolist()
-                data['numbers'].extend(numbers)
-        
-    except Exception as e:
-        print(f"❌ 엑셀 추출 오류: {str(e)}")
-        data['error'] = str(e)
-    
-    return data
-
-def extract_word_data(filepath):
-    """워드 파일 데이터 추출"""
-    data = {
-        'text_content': [],
-        'tables': [],
-        'numbers': [],
-        'images': [],
-        'metadata': {}
-    }
-    
-    try:
-        from docx import Document
-        
-        doc = Document(filepath)
-        
-        # 텍스트 추출
-        full_text = ""
-        for paragraph in doc.paragraphs:
-            if paragraph.text.strip():
-                full_text += paragraph.text + "\n"
-        
-        if full_text.strip():
-            data['text_content'].append({
-                'page': 1,
-                'text': full_text.strip()
-            })
-        
-        # 테이블 추출
-        for table_idx, table in enumerate(doc.tables):
-            table_data = []
-            for row in table.rows:
-                row_data = [cell.text for cell in row.cells]
-                table_data.append(row_data)
-            
-            data['tables'].append({
-                'table_index': table_idx,
-                'data': table_data
-            })
-        
-        # 숫자 추출
-        numbers = extract_numbers_from_text(full_text)
-        data['numbers'] = numbers
-        
-    except Exception as e:
-        print(f"❌ 워드 추출 오류: {str(e)}")
-        data['error'] = str(e)
-    
-    return data
-
-def extract_generic_data(filepath):
-    """일반 파일 데이터 추출"""
-    data = {
-        'text_content': [],
-        'tables': [],
-        'numbers': [],
-        'images': [],
-        'metadata': {}
-    }
-    
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-            
-        data['text_content'].append({
-            'page': 1,
-            'text': content
-        })
-        
-        # 숫자 추출
-        numbers = extract_numbers_from_text(content)
-        data['numbers'] = numbers
-        
-    except Exception as e:
-        print(f"❌ 일반 파일 추출 오류: {str(e)}")
-        data['error'] = str(e)
-    
-    return data
-
-def extract_numbers_from_text(text):
-    """텍스트에서 숫자 패턴 추출"""
-    import re
-    
-    numbers = []
-    
-    # 다양한 숫자 패턴 매칭
-    patterns = [
-        r'\d+\.?\d*',  # 일반 숫자 (정수/소수)
-        r'\d+%',       # 퍼센트
-        r'\d+g',       # 그램
-        r'\d+mg',      # 밀리그램
-        r'\d+ml',      # 밀리리터
-        r'\d+L',       # 리터
-        r'\d+개',      # 개수
-        r'\d+박스',    # 박스
-        r'\d+kg',      # 킬로그램
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text)
-        numbers.extend(matches)
-    
-    return list(set(numbers))  # 중복 제거
-
-def analyze_ocr_table_structure(ocr_data):
-    """OCR 결과에서 테이블 구조 분석"""
-    try:
-        # OCR 결과를 기반으로 테이블 구조 추정
-        # 실제 구현에서는 더 정교한 알고리즘 필요
-        table_data = []
-        
-        # 간단한 테이블 구조 추정
-        if 'text' in ocr_data and ocr_data['text']:
-            lines = [line.strip() for line in ocr_data['text'] if line.strip()]
-            for line in lines:
-                # 탭이나 공백으로 구분된 데이터를 행으로 처리
-                row = [cell.strip() for cell in line.split('\t') if cell.strip()]
-                if row:
-                    table_data.append(row)
-        
-        return table_data
-        
-    except Exception as e:
-        print(f"❌ 테이블 구조 분석 오류: {str(e)}")
-        return []
-
-def structure_extracted_data(extracted_data, document_type):
-    """추출된 데이터를 항목별로 구조화"""
-    structured_data = {
-        '원재료': [],
-        '영양성분': [],
-        '표기사항': [],
-        '포장정보': [],
-        '기타정보': []
-    }
-    
-    try:
-        # 텍스트 내용 분석
-        for text_item in extracted_data.get('text_content', []):
-            text = text_item.get('text', '')
-            
-            # 원재료 정보 추출
-            if any(keyword in text for keyword in ['원재료', '성분', 'ingredient', '재료']):
-                structured_data['원재료'].append({
-                    'source': text_item,
-                    'content': text,
-                    'type': 'text'
-                })
-            
-            # 영양성분 정보 추출
-            if any(keyword in text for keyword in ['영양성분', 'nutrition', '칼로리', '단백질', '지방', '탄수화물']):
-                structured_data['영양성분'].append({
-                    'source': text_item,
-                    'content': text,
-                    'type': 'text'
-                })
-            
-            # 표기사항 추출
-            if any(keyword in text for keyword in ['유통기한', '제조일', '보관방법', '알레르기', 'allergy']):
-                structured_data['표기사항'].append({
-                    'source': text_item,
-                    'content': text,
-                    'type': 'text'
-                })
-            
-            # 포장정보 추출
-            if any(keyword in text for keyword in ['포장', '용량', '개수', '무게', 'volume', 'weight']):
-                structured_data['포장정보'].append({
-                    'source': text_item,
-                    'content': text,
-                    'type': 'text'
-                })
-        
-        # 테이블 데이터 분석
-        for table_item in extracted_data.get('tables', []):
-            table_data = table_item.get('data', [])
-            
-            # 영양성분표 테이블 감지
-            if is_nutrition_table(table_data):
-                structured_data['영양성분'].append({
-                    'source': table_item,
-                    'content': table_data,
-                    'type': 'table'
-                })
-            
-            # 원재료 테이블 감지
-            elif is_ingredient_table(table_data):
-                structured_data['원재료'].append({
-                    'source': table_item,
-                    'content': table_data,
-                    'type': 'table'
-                })
-            
-            # 기타 테이블
-            else:
-                structured_data['기타정보'].append({
-                    'source': table_item,
-                    'content': table_data,
-                    'type': 'table'
-                })
-        
-        # 숫자 데이터 분류
-        numbers = extracted_data.get('numbers', [])
-        if numbers:
-            structured_data['포장정보'].append({
-                'source': 'extracted_numbers',
-                'content': numbers,
-                'type': 'numbers'
-            })
-        
-    except Exception as e:
-        print(f"❌ 데이터 구조화 오류: {str(e)}")
-        structured_data['error'] = str(e)
-    
-    return structured_data
-
-def is_nutrition_table(table_data):
-    """영양성분표 테이블인지 판단"""
-    if not table_data:
-        return False
-    
-    # 첫 번째 행의 헤더 확인
-    first_row = table_data[0] if isinstance(table_data[0], list) else []
-    nutrition_keywords = ['영양성분', 'nutrition', '칼로리', 'calorie', '단백질', 'protein', '지방', 'fat', '탄수화물', 'carbohydrate']
-    
-    for cell in first_row:
-        if any(keyword in str(cell).lower() for keyword in nutrition_keywords):
-            return True
-    
-    return False
-
-def is_ingredient_table(table_data):
-    """원재료 테이블인지 판단"""
-    if not table_data:
-        return False
-    
-    # 첫 번째 행의 헤더 확인
-    first_row = table_data[0] if isinstance(table_data[0], list) else []
-    ingredient_keywords = ['원재료', 'ingredient', '성분', '재료', 'material']
-    
-    for cell in first_row:
-        if any(keyword in str(cell).lower() for keyword in ingredient_keywords):
-            return True
-    
-    return False
 
 def normalize_data_for_database(structured_data):
     """구조화된 데이터를 데이터베이스 형태로 정규화"""
@@ -6915,7 +6738,6 @@ def generate_document_templates(country, product_type):
         }
     
     return templates
-
 def get_practical_tips(issue, country):
     """실무 팁 생성"""
     category = issue.get('category', '')
@@ -6952,7 +6774,6 @@ def get_practical_tips(issue, country):
             ])
     
     return tips
-
 def get_format_guidelines(country, product_type):
     """포맷 가이드라인"""
     if country == '중국':
@@ -6985,7 +6806,6 @@ def get_format_guidelines(country, product_type):
         }
     else:
         return {}
-
 def calculate_failure_probability(critical_issues, major_issues, country):
     """통관 실패 가능성 계산"""
     base_probability = 0.1  # 기본 10%
@@ -7714,7 +7534,6 @@ def api_public_data_db_sync_strategy():
             'success': False,
             'error': f'동기화 방안 조회 중 오류가 발생했습니다: {str(e)}'
         })
-
 @app.route('/api/public-data-status', methods=['GET'])
 def api_public_data_status():
     """공공데이터 분석기 상태 확인 API"""
@@ -7747,11 +7566,9 @@ def api_public_data_status():
             'success': False,
             'error': f'상태 확인 중 오류가 발생했습니다: {str(e)}'
         })
-
 # ============================================================================
 # 시장 진출 전략 보고서 파싱 API 엔드포인트
 # ============================================================================
-
 @app.route('/api/market-entry-strategy-parse', methods=['POST'])
 def api_market_entry_strategy_parse():
     """시장 진출 전략 보고서 파싱 API"""
@@ -8012,360 +7829,6 @@ def process_simple_natural_language_query(query):
    - 포장재 안전성 검증
 
 구체적인 품목을 알려주시면 더 상세한 정보를 제공해드릴 수 있습니다."""
-    
-    # 미국 관련 질문
-    elif '미국' in query_lower:
-        if '라면' in query_lower or '면류' in query_lower:
-            if '서류' in query_lower or '필요' in query_lower:
-                return """미국 라면 수출에 필요한 주요 서류:
-
-1. **기본 서류**
-   - 상업송장 (Commercial Invoice)
-   - 포장명세서 (Packing List)
-   - 원산지증명서 (Certificate of Origin)
-
-2. **식품 안전 서류**
-   - FDA 등록증 (Food Facility Registration)
-   - 식품안전현대화법(FSMA) 준수증명
-   - HACCP 계획서
-
-3. **라벨링 요건**
-   - 영양성분표 (Nutrition Facts)
-   - 성분표 (Ingredients List)
-   - 알레르기 정보 (8대 알레르기원)
-   - 영어 표기 필수
-
-4. **추가 요건**
-   - FDA Prior Notice (수입 전 통지)
-   - 검역검사 통과
-   - 포장재 안전성 검증
-
-5. **특별 주의사항**
-   - MSG 사용 시 라벨 표시
-   - 유전자변형 원료 사용 시 표시
-   - 방사선 조사 식품 표시
-
-💡 팁: 미국은 식품 안전 규제가 매우 엄격하므로 사전 준비가 중요합니다."""
-            elif '규제' in query_lower or '제한' in query_lower:
-                return """미국 라면 수출 주요 규제사항:
-
-1. **식품 안전 규제**
-   - FDA 식품안전규정
-   - 식품안전현대화법(FSMA) 준수
-   - HACCP 시스템 구축
-
-2. **라벨링 규제**
-   - 영어 표기 필수
-   - 영양성분표 (Nutrition Facts)
-   - 성분표 (Ingredients List)
-   - 알레르기 정보 (8대 알레르기원)
-
-3. **검역 규제**
-   - FDA Prior Notice (수입 전 통지)
-   - 검역검사 통과
-   - 포장재 안전성 검증
-
-4. **수입 제한사항**
-   - 특정 식품첨가물 사용 제한
-   - 유전자변형 원료 사용 시 표시
-   - 방사선 조사 식품 표시
-
-5. **관세 및 비관세 장벽**
-   - HS코드별 관세율 적용
-   - FDA 등록증 필요
-   - 검역비용 부담
-
-💡 팁: 미국은 식품 안전 규제가 매우 엄격하므로 사전 준비가 중요합니다."""
-            else:
-                return "미국 라면 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
-        
-        elif '리스크' in query_lower or '위험' in query_lower or '주의사항' in query_lower:
-            return """미국 수출 주요 리스크:
-
-1. **규제 리스크**
-   - 엄격한 FDA 규제
-   - 식품안전현대화법(FSMA) 준수
-   - 복잡한 라벨링 요건
-   - 갑작스러운 규제 변경
-
-2. **관세 및 무역 리스크**
-   - 관세율 변동 가능성
-   - 무역 분쟁 영향
-   - 수입 제한 조치
-   - 기술적 무역장벽
-
-3. **운송 및 물류 리스크**
-   - 긴 운송 시간
-   - 온도 관리 필요
-   - 포장재 안전성 검증
-   - 통관 지연 가능성
-
-4. **시장 리스크**
-   - 강력한 현지 경쟁
-   - 소비자 선호도 변화
-   - 환율 변동 리스크
-   - 경제 정책 변화
-
-5. **법적 리스크**
-   - 제품 책임 소송
-   - 계약 분쟁
-   - 지적재산권 문제
-   - 알레르기 관련 소송
-
-6. **품질 관리 리스크**
-   - 엄격한 품질 기준
-   - HACCP 시스템 구축
-   - 유통기한 관리
-   - 알레르기 정보 정확성
-
-💡 리스크 완화 방안:
-- FDA 사전 등록
-- 제품 책임 보험 가입
-- 현지 법률 자문
-- 단계적 시장 진입"""
-        
-        elif '서류' in query_lower or '필요' in query_lower:
-            return """미국 수출 일반 서류 요건:
-
-1. **기본 서류**
-   - 상업송장 (Commercial Invoice)
-   - 포장명세서 (Packing List)
-   - 원산지증명서 (Certificate of Origin)
-
-2. **식품류 특별 서류**
-   - FDA 등록증
-   - 식품안전현대화법(FSMA) 준수증명
-   - HACCP 계획서
-
-3. **라벨링 요건**
-   - 영어 표기 필수
-   - 영양성분표
-   - 알레르기 정보
-
-4. **추가 요건**
-   - FDA Prior Notice
-   - 검역검사 통과
-   - 포장재 안전성 검증
-
-구체적인 품목을 알려주시면 더 상세한 정보를 제공해드릴 수 있습니다."""
-    
-    # 일반적인 질문
-    elif '리스크' in query_lower or '위험' in query_lower or '주의사항' in query_lower:
-        return """수출 일반 주요 리스크:
-
-1. **규제 리스크**
-   - 각국별 상이한 규제
-   - 갑작스러운 규제 변경
-   - 복잡한 인증 절차
-   - 기술적 무역장벽
-
-2. **관세 및 무역 리스크**
-   - 관세율 변동
-   - 무역 분쟁 영향
-   - 수입 제한 조치
-   - 환율 변동
-
-3. **운송 및 물류 리스크**
-   - 운송 지연
-   - 화물 손상
-   - 온도 관리
-   - 통관 지연
-
-4. **시장 리스크**
-   - 현지 경쟁
-   - 소비자 선호도 변화
-   - 경제 정책 변화
-   - 시장 진입 장벽
-
-5. **법적 리스크**
-   - 계약 분쟁
-   - 지적재산권 문제
-   - 현지 법규 미준수
-   - 제품 책임
-
-6. **품질 관리 리스크**
-   - 품질 기준 차이
-   - 검증 어려움
-   - 유통기한 관리
-   - 품질 보증
-
-💡 리스크 완화 방안:
-- 사전 시장 조사
-- 현지 파트너십 구축
-- 보험 가입
-- 단계적 진입"""
-    
-    elif '서류' in query_lower or '필요' in query_lower:
-        return """수출 서류 일반 요건:
-
-1. **기본 서류**
-   - 상업송장 (Commercial Invoice)
-   - 포장명세서 (Packing List)
-   - 원산지증명서 (Certificate of Origin)
-
-2. **품목별 추가 서류**
-   - 식품류: 위생증명서, 검역증명서
-   - 전자제품: 안전인증서, 전자파 적합성
-   - 화학제품: MSDS, 위험물 운송서류
-
-3. **국가별 특별 요건**
-   - 중국: 식품안전관리인증서, 중국어 라벨
-   - 미국: FDA 등록증, Prior Notice
-   - EU: CE 마킹, REACH 규정
-
-구체적인 국가와 품목을 알려주시면 더 정확한 정보를 제공해드릴 수 있습니다."""
-    
-    elif '규제' in query_lower or '제한' in query_lower:
-        return """수출 규제 주요 사항:
-
-1. **식품 안전 규제**
-   - 각국 식품안전기준 준수
-   - 식품첨가물 사용 제한
-   - 알레르기 정보 표시
-
-2. **라벨링 규제**
-   - 현지 언어 표기
-   - 영양성분표
-   - 원산지 표시
-
-3. **검역 규제**
-   - 검역검사 통과
-   - 위생증명서
-   - 포장재 안전성
-
-4. **관세 및 비관세 장벽**
-   - HS코드별 관세율
-   - 수입허가증
-   - 기술적 장벽
-
-구체적인 국가와 품목을 알려주시면 더 상세한 규제 정보를 제공해드릴 수 있습니다."""
-    
-    else:
-        return """죄송합니다. 질문을 이해하지 못했습니다.
-
-다음과 같은 질문에 답변할 수 있습니다:
-
-🇨🇳 **중국 수출 관련**
-- 중국 라면 수출 서류 요건
-- 중국 라면 수출 규제사항
-- 중국 수출 주요 리스크
-- 중국 수출 일반 서류 요건
-
-🇺🇸 **미국 수출 관련**
-- 미국 라면 수출 서류 요건
-- 미국 라면 수출 규제사항
-- 미국 수출 주요 리스크
-- 미국 수출 일반 서류 요건
-
-🌍 **일반 수출 관련**
-- 수출 서류 일반 요건
-- 수출 주요 리스크
-- 수출 규제 주요 사항
-
-구체적인 국가와 품목을 포함해서 질문해주세요!"""
-
-@app.route('/api/integrated-db-status', methods=['GET'])
-def api_integrated_db_status():
-    """통합 데이터베이스 상태 확인 API"""
-    try:
-        if mvp_system.integrated_db:
-            status = mvp_system.integrated_db.get_database_status()
-            return jsonify({
-                "success": True,
-                "message": "통합 데이터베이스 상태 확인 완료",
-                "data": status
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "message": "통합 데이터베이스가 초기화되지 않았습니다",
-                "data": None
-            })
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": f"통합 데이터베이스 상태 확인 중 오류: {str(e)}",
-            "data": None
-        })
-
-@app.route('/api/load-sample-data', methods=['POST'])
-def api_load_sample_data():
-    """샘플 데이터 로드 API (테스트용)"""
-    try:
-        if not mvp_system.integrated_db:
-            return jsonify({
-                "success": False,
-                "message": "통합 데이터베이스가 초기화되지 않았습니다"
-            })
-        
-        # 샘플 규제 데이터
-        sample_regulations = [
-            {
-                "country": "중국",
-                "product": "라면",
-                "category": "식품안전",
-                "title": "중국 라면 수출 식품안전 규제",
-                "description": "중국으로 라면을 수출할 때 준수해야 하는 식품안전 규제입니다.",
-                "requirements": "식품안전인증서, 원산지증명서, 검역증명서",
-                "source": "KOTRA_API",
-                "last_updated": "2025-01-15"
-            },
-            {
-                "country": "미국",
-                "product": "라면",
-                "category": "식품안전",
-                "title": "미국 라면 수출 FDA 규제",
-                "description": "미국 FDA의 라면 수입 규제 요구사항입니다.",
-                "requirements": "FDA 등록, 식품안전계획, 라벨링 규정 준수",
-                "source": "KOTRA_API",
-                "last_updated": "2025-01-10"
-            }
-        ]
-        
-        # 샘플 무역 통계 데이터
-        sample_trade_stats = [
-            {
-                "country": "중국",
-                "hs_code": "190230",
-                "product": "라면",
-                "period": "2024년 4분기",
-                "export_amount": 1500000,
-                "import_amount": 500000,
-                "trade_balance": 1000000,
-                "growth_rate": 15.5,
-                "market_share": 25.3,
-                "source": "KOTRA_BIGDATA",
-                "data_date": "2024-12-31"
-            },
-            {
-                "country": "미국",
-                "hs_code": "190230",
-                "product": "라면",
-                "period": "2024년 4분기",
-                "export_amount": 2000000,
-                "import_amount": 800000,
-                "trade_balance": 1200000,
-                "growth_rate": 12.8,
-                "market_share": 18.7,
-                "source": "KOTRA_BIGDATA",
-                "data_date": "2024-12-31"
-            }
-        ]
-        
-        # 샘플 시장 분석 데이터
-        sample_market_analysis = [
-            {
-                "country": "중국",
-                "product": "라면",
-                "analysis_type": "시장동향",
-                "title": "중국 라면 시장 성장 전망",
-                "content": "중국 라면 시장은 연평균 8% 성장률을 보이며, 프리미엄 라면 수요가 증가하고 있습니다.",
-                "trend_type": "growth",
-                "period": "2025년",
-                "data_support": "KOTRA 시장조사",
-                "source": "KOTRA_BIGDATA"
-            }
-        ]
         
         # 샘플 전략 보고서 데이터
         sample_strategy_reports = [
@@ -8429,4 +7892,5 @@ if __name__ == '__main__':
     print(f"🔌 포트: {port}")
     print(f"💾 메모리 제한: {'512MB (Render)' if os.environ.get('RENDER') else '무제한 (로컬)'}")
     
+    print('app.run 직전')
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
