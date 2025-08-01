@@ -1,0 +1,87 @@
+{
+  "shipper_seller": {
+    "x": 104.5,
+    "y": 155.0,
+    "font_size": 9
+  },
+  "invoice_no_date": {
+    "x": 308.5,
+    "y": 151.0,
+    "font_size": 9
+  },
+  "lc_no_date": {
+    "x": 103.5,
+    "y": 286.5,
+    "font_size": 7
+  },
+  "buyer": {
+    "x": 306.5,
+    "y": 262.5,
+    "font_size": 9
+  },
+  "other_references": {
+    "x": 300.5,
+    "y": 322.0,
+    "font_size": 7
+  },
+  "departure_date": {
+    "x": 147.0,
+    "y": 336.0,
+    "font_size": 9
+  },
+  "vessel_flight": {
+    "x": 137.5,
+    "y": 360.0,
+    "font_size": 5
+  },
+  "from_location": {
+    "x": 214.0,
+    "y": 359.5,
+    "font_size": 9
+  },
+  "to_location": {
+    "x": 105.5,
+    "y": 377.5,
+    "font_size": 9
+  },
+  "terms_delivery_payment": {
+    "x": 305.5,
+    "y": 373.5,
+    "font_size": 7
+  },
+  "shipping_marks": {
+    "x": 84.0,
+    "y": 418.0,
+    "font_size": 7
+  },
+  "package_count_type": {
+    "x": 169.0,
+    "y": 425.0,
+    "font_size": 9
+  },
+  "goods_description": {
+    "x": 255.5,
+    "y": 427.5,
+    "font_size": 7
+  },
+  "quantity": {
+    "x": 337.5,
+    "y": 419.0,
+    "font_size": 9
+  },
+  "unit_price": {
+    "x": 405.0,
+    "y": 414.0,
+    "font_size": 9
+  },
+  "amount": {
+    "x": 464.5,
+    "y": 420.0,
+    "font_size": 9
+  },
+  "signed_by": {
+    "x": 409.68,
+    "y": 618.48,
+    "font_size": 9
+  }
+}

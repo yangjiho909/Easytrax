@@ -57,8 +57,10 @@ tmp/
 # Uploaded files (for security)
 uploaded_documents/
 uploaded_labels/
-uploaded_templates/
 temp_uploads/
+
+# Template files (included for deployment)
+# uploaded_templates/ - 템플릿 파일들은 배포를 위해 포함
 
 # Generated files
 generated_documents/

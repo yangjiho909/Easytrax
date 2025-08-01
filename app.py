@@ -20,6 +20,24 @@ from soynlp.tokenizer import RegexTokenizer
 from typing import Dict
 import json
 
+# 환경 설정
+ENVIRONMENT = os.environ.get('FLASK_ENV', 'development')
+IS_PRODUCTION = ENVIRONMENT == 'production'
+IS_RENDER = os.environ.get('RENDER') is not None
+
+# 환경별 기능 제어
+FEATURE_FLAGS = {
+    'ai_services': not IS_PRODUCTION,  # 프로덕션에서는 AI 서비스 비활성화
+    'debug_mode': not IS_PRODUCTION,   # 프로덕션에서는 디버그 비활성화
+    'file_uploads': True,              # 파일 업로드는 모든 환경에서 활성화
+    'database_operations': True,       # 데이터베이스 작업은 모든 환경에서 활성화
+    'advanced_ocr': not IS_RENDER,     # Render에서는 기본 OCR만 사용
+    'real_time_updates': not IS_RENDER # Render에서는 실시간 업데이트 비활성화
+}
+
+print(f"🚀 KATI 시스템 시작 - 환경: {ENVIRONMENT}")
+print(f"📊 기능 플래그: {FEATURE_FLAGS}")
+
 # 무료 시스템 import
 try:
     from cloud_storage import cloud_storage
@@ -8071,4 +8089,11 @@ def api_load_sample_data():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
-    app.run(debug=debug_mode, host='0.0.0.0', port=port) 
+    
+    # 환경별 설정 로그
+    print(f"🌍 환경: {os.environ.get('FLASK_ENV', 'development')}")
+    print(f"🐛 디버그 모드: {debug_mode}")
+    print(f"🔌 포트: {port}")
+    print(f"💾 메모리 제한: {'512MB (Render)' if os.environ.get('RENDER') else '무제한 (로컬)'}")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)

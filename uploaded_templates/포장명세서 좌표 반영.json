@@ -1,0 +1,87 @@
+{
+  "seller": {
+    "x": 132.48,
+    "y": 172.08,
+    "font_size": 9
+  },
+  "consignee": {
+    "x": 122.4,
+    "y": 251.28,
+    "font_size": 9
+  },
+  "notify_party": {
+    "x": 159.12,
+    "y": 291.6,
+    "font_size": 7
+  },
+  "departure_date": {
+    "x": 151.2,
+    "y": 328.32,
+    "font_size": 9
+  },
+  "vessel_flight": {
+    "x": 133.92,
+    "y": 360.0,
+    "font_size": 5
+  },
+  "from_location": {
+    "x": 216.0,
+    "y": 360.72,
+    "font_size": 9
+  },
+  "to_location": {
+    "x": 118.8,
+    "y": 387.36,
+    "font_size": 9
+  },
+  "invoice_no_date": {
+    "x": 411.84,
+    "y": 167.04,
+    "font_size": 9
+  },
+  "buyer": {
+    "x": 344.16,
+    "y": 250.56,
+    "font_size": 9
+  },
+  "other_references": {
+    "x": 339.84,
+    "y": 337.68,
+    "font_size": 7
+  },
+  "shipping_marks": {
+    "x": 88.56,
+    "y": 466.56,
+    "font_size": 7
+  },
+  "package_count_type": {
+    "x": 176.4,
+    "y": 465.84,
+    "font_size": 9
+  },
+  "goods_description": {
+    "x": 263.52,
+    "y": 462.96,
+    "font_size": 7
+  },
+  "quantity_net_weight": {
+    "x": 347.76,
+    "y": 476.64,
+    "font_size": 9
+  },
+  "gross_weight": {
+    "x": 411.84,
+    "y": 469.44,
+    "font_size": 9
+  },
+  "measurement": {
+    "x": 475.2,
+    "y": 465.12,
+    "font_size": 9
+  },
+  "signed_by": {
+    "x": 370.8,
+    "y": 627.84,
+    "font_size": 9
+  }
+}
