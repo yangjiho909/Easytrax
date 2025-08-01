@@ -2270,11 +2270,15 @@ def api_regulation_info():
         # 1단계: KOTRA API 시도 (최신 공공데이터)
         if mvp_system.kotra_api and country in ["중국", "미국"]:
             print(f"🌐 {country} KOTRA API 규제 정보 조회 시도...")
-            regulation_info = mvp_system.kotra_api.get_country_regulations(country)
-            if regulation_info:
-                print(f"✅ {country} KOTRA API 규제 정보 조회 성공")
-            else:
-                print(f"⚠️ {country} KOTRA API 규제 정보 없음, 실시간 크롤러 시도")
+            try:
+                regulation_info = mvp_system.kotra_api.get_country_regulations(country)
+                if regulation_info:
+                    print(f"✅ {country} KOTRA API 규제 정보 조회 성공")
+                else:
+                    print(f"⚠️ {country} KOTRA API 규제 정보 없음, 실시간 크롤러 시도")
+            except Exception as e:
+                print(f"⚠️ {country} KOTRA API 오류: {str(e)}, 실시간 크롤러 시도")
+                regulation_info = None
         
         # 2단계: 실시간 크롤러 시도 (기존 시스템)
         if not regulation_info and mvp_system.real_time_crawler:
@@ -2294,17 +2298,25 @@ def api_regulation_info():
             else:
                 print(f"⚠️ {country} MVP 규제 정보 없음")
         
-        # 4단계: 기본 규제 정보 제공 (최후 수단)
+        # 4단계: 데이터베이스에 없는 경우 메시지 출력
         if not regulation_info:
-            print(f"❌ {country} 규제 정보 없음, 기본 규제 정보 사용")
+            print(f"❌ {country} 규제 정보 없음, 데이터베이스에 없는 정보")
             regulation_info = {
                 "국가": country,
                 "제품": product,
-                "제한사항": ["라벨에 현지어 표기 필수", "원산지 명시 필수"],
-                "허용기준": ["현지어 라벨 필수", "원산지 명시 필수"],
-                "필요서류": ["상업송장", "포장명세서", "원산지증명서"],
-                "통관절차": ["수출신고", "검역검사", "통관승인"],
-                "주의사항": ["라벨 미표기 시 반송", "원산지 미표기 시 반송"],
+                "메시지": f"죄송합니다. {country}의 {product} 관련 규제 정보가 현재 데이터베이스에 없습니다.",
+                "제안사항": [
+                    "다른 국가를 선택해보세요 (중국, 미국 지원)",
+                    "다른 제품을 선택해보세요",
+                    "일반적인 수출 규제 정보를 확인해보세요"
+                ],
+                "기본_규제정보": {
+                    "제한사항": ["라벨에 현지어 표기 필수", "원산지 명시 필수"],
+                    "허용기준": ["현지어 라벨 필수", "원산지 명시 필수"],
+                    "필요서류": ["상업송장", "포장명세서", "원산지증명서"],
+                    "통관절차": ["수출신고", "검역검사", "통관승인"],
+                    "주의사항": ["라벨 미표기 시 반송", "원산지 미표기 시 반송"]
+                },
                 "추가정보": {
                     "관련법규": f"{country} 무역·통관 관련 법령",
                     "검사기관": f"{country} 세관, 검역소, 관련 정부기관",
@@ -2312,8 +2324,9 @@ def api_regulation_info():
                     "수수료": "검사비 및 수수료",
                     "최종업데이트": datetime.now().strftime('%Y-%m-%d'),
                     "원본언어": "ko-KR",
-                    "번역출처": "기본 규제 정보",
-                    "API_출처": "시스템 기본값"
+                    "번역출처": "데이터베이스 없음",
+                    "API_출처": "시스템 기본값",
+                    "데이터상태": "데이터베이스에 해당 정보 없음"
                 }
             }
         
@@ -2916,10 +2929,28 @@ def perform_basic_compliance_analysis(country, product_type, company_info, produ
             if 'load_country_regulations' in globals():
                 regulations = load_country_regulations(country, product_type)
             else:
-                print("⚠️ load_country_regulations 함수를 찾을 수 없음")
+                print("⚠️ load_country_regulations 함수를 찾을 수 없음, 기본 규제 정보 사용")
+                # 기본 규제 정보 제공
+                regulations = {
+                    "국가": country,
+                    "제품": product_type,
+                    "제한사항": ["라벨에 현지어 표기 필수", "원산지 명시 필수"],
+                    "허용기준": ["현지어 라벨 필수", "원산지 명시 필수"],
+                    "필요서류": ["상업송장", "포장명세서", "원산지증명서"],
+                    "통관절차": ["수출신고", "검역검사", "통관승인"],
+                    "주의사항": ["라벨 미표기 시 반송", "원산지 미표기 시 반송"]
+                }
         except Exception as e:
-            print(f"⚠️ 규제 정보 로드 실패: {e}")
-            regulations = {}
+            print(f"⚠️ 규제 정보 로드 실패: {e}, 기본 규제 정보 사용")
+            regulations = {
+                "국가": country,
+                "제품": product_type,
+                "제한사항": ["라벨에 현지어 표기 필수", "원산지 명시 필수"],
+                "허용기준": ["현지어 라벨 필수", "원산지 명시 필수"],
+                "필요서류": ["상업송장", "포장명세서", "원산지증명서"],
+                "통관절차": ["수출신고", "검역검사", "통관승인"],
+                "주의사항": ["라벨 미표기 시 반송", "원산지 미표기 시 반송"]
+            }
         
         # 기본 체크리스트 생성
         basic_checklist = [
@@ -3781,10 +3812,20 @@ def api_document_generation():
                     elif doc_name == "포장명세서":
                         coordinate_file = "uploaded_templates/포장명세서 좌표 반영.json"
                     
-                    # 좌표 파일 존재 확인
-                    if coordinate_file and not os.path.exists(coordinate_file):
-                        print(f"⚠️ 좌표 파일이 없습니다: {coordinate_file}")
-                        coordinate_file = None
+                    # 좌표 파일 존재 확인 (절대 경로도 시도)
+                    if coordinate_file:
+                        if not os.path.exists(coordinate_file):
+                            # 절대 경로로 시도
+                            coordinate_file_abs = os.path.abspath(coordinate_file)
+                            print(f"📁 좌표 파일 절대 경로 시도: {coordinate_file_abs}")
+                            if os.path.exists(coordinate_file_abs):
+                                coordinate_file = coordinate_file_abs
+                                print(f"✅ 절대 경로에서 좌표 파일 발견: {coordinate_file}")
+                            else:
+                                print(f"⚠️ 좌표 파일이 없습니다: {coordinate_file}")
+                                coordinate_file = None
+                        else:
+                            print(f"✅ 좌표 파일 발견: {coordinate_file}")
                     
                     # 데이터 준비 - 실제 좌표 파일의 필드명에 맞춰 매핑
                     pdf_data = {}
@@ -3810,6 +3851,11 @@ def api_document_generation():
                             "amount": str(product_info.get("total_amount", "")),
                             "signed_by": company_info.get("representative", "")
                         }
+                        
+                        # 디버그: 매핑된 데이터 출력
+                        print(f"📋 상업송장 데이터 매핑 결과:")
+                        for key, value in pdf_data.items():
+                            print(f"  - {key}: '{value}'")
                     
                     # 포장명세서 데이터 매핑 - 좌표 파일의 필드명과 정확히 일치
                     elif doc_name == "포장명세서":
@@ -3832,6 +3878,11 @@ def api_document_generation():
                             "measurement": packing_details.get("dimensions", ""),
                             "signed_by": company_info.get("representative", "")
                         }
+                        
+                        # 디버그: 매핑된 데이터 출력
+                        print(f"📋 포장명세서 데이터 매핑 결과:")
+                        for key, value in pdf_data.items():
+                            print(f"  - {key}: '{value}'")
                     
                     # 디버그: PDF 데이터 출력
                     print(f"📋 {doc_name} PDF 데이터:")
@@ -3879,6 +3930,28 @@ def api_document_generation():
                         except ImportError:
                             print("❌ 모든 PDF 생성기 로드 실패, 텍스트 파일로 대체")
                             raise ImportError("PDF 생성기를 찾을 수 없습니다")
+                except Exception as pdf_gen_error:
+                    print(f"❌ PDF 생성 오류: {pdf_gen_error}")
+                    import traceback
+                    print(f"📋 상세 오류: {traceback.format_exc()}")
+                    
+                    # 배포 환경에서의 폴백: 텍스트 파일 생성
+                    try:
+                        txt_filename = pdf_filename.replace('.pdf', '.txt')
+                        txt_path = os.path.join("generated_documents", txt_filename)
+                        
+                        # generated_documents 폴더가 없으면 현재 디렉토리에 생성
+                        if not os.path.exists("generated_documents"):
+                            txt_path = txt_filename
+                        
+                        with open(txt_path, 'w', encoding='utf-8') as f:
+                            f.write(f"=== {doc_name} ===\n\n{content}")
+                        pdf_files[doc_name] = txt_filename
+                        print(f"✅ 텍스트 파일로 대체 생성: {txt_path}")
+                        continue
+                    except Exception as txt_error:
+                        print(f"❌ 텍스트 파일 생성도 실패: {txt_error}")
+                        pdf_files[doc_name] = f"생성실패_{doc_name}.txt"
                 except Exception as pdf_gen_error:
                     print(f"❌ PDF 생성 오류: {pdf_gen_error}")
                     import traceback
@@ -4570,22 +4643,47 @@ def generate_label(country, merged_product_info, ocr_info):
                     print(f"❌ 모든 라벨 생성기 실패: {str(e3)}")
                     return jsonify({'error': f'라벨 생성 실패: {str(e)}'})
         
-        # 이미지 저장
+        # 이미지 저장 (배포 환경 권한 문제 해결)
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"nutrition_label_{country}_{timestamp}.png"
             output_dir = "advanced_labels"
             
-            # 디렉토리 생성
-            os.makedirs(output_dir, exist_ok=True)
+            # 디렉토리 생성 (권한 문제 해결)
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                print(f"✅ 디렉토리 생성/확인: {output_dir}")
+            except Exception as dir_error:
+                print(f"⚠️ 디렉토리 생성 실패: {dir_error}")
+                # 현재 디렉토리에 저장
+                output_dir = "."
+                filename = f"label_{country}_{timestamp}.png"
+                print(f"⚠️ 현재 디렉토리에 저장: {filename}")
             
             # 이미지 저장
             image_path = os.path.join(output_dir, filename)
             image.save(image_path)
             print(f"✅ 이미지 저장 성공: {image_path}")
+            
         except Exception as e:
             print(f"❌ 이미지 저장 실패: {str(e)}")
-            return jsonify({'error': f'이미지 저장 실패: {str(e)}'})
+            # 폴백: 텍스트만 반환
+            return jsonify({
+                'success': True,
+                'label_data': {
+                    'text_content': f"라벨 생성 완료 (이미지 저장 실패: {str(e)})",
+                    'image_path': None,
+                    'filename': None,
+                    'country': country,
+                    'label_type': 'text_only'
+                },
+                'ocr_info': {
+                    'processed_files': 0,
+                    'extracted_nutrition': False,
+                    'ocr_data': {},
+                    'ocr_used': False
+                }
+            })
         
         # 텍스트 내용 생성 (OCR 정보 포함)
         nutrition_info = merged_product_info.get('nutrition', {})
@@ -4738,17 +4836,36 @@ def create_simple_test_label(country, product_info):
         # 국가별 폰트 경로 (우선순위 순)
         if country == "중국":
             font_paths = [
+                # 배포 환경용 폰트 경로 (우선)
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Linux
+                "/System/Library/Fonts/PingFang.ttc",  # macOS
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto
+                # Windows 폰트 경로 (로컬 환경용)
                 "C:/Windows/Fonts/msyh.ttc",        # Microsoft YaHei (중국어, 영어, 한글)
                 "C:/Windows/Fonts/simsun.ttc",      # SimSun (중국어, 영어)
                 "C:/Windows/Fonts/msyhbd.ttc",      # Microsoft YaHei Bold
                 "C:/Windows/Fonts/simhei.ttf",      # SimHei (중국어)
+                "C:/Windows/Fonts/simkai.ttf",      # SimKai (중국어)
+                "C:/Windows/Fonts/simfang.ttf",     # SimFang (중국어)
                 "C:/Windows/Fonts/malgun.ttf",      # 맑은 고딕 (한글)
                 "C:/Windows/Fonts/gulim.ttc",       # 굴림 (한글)
                 "C:/Windows/Fonts/arial.ttf",       # Arial (영어)
+                # 상대 경로 폰트 (배포 환경용)
+                "fonts/msyh.ttc",
+                "fonts/simsun.ttc",
+                "fonts/msyhbd.ttc",
+                "fonts/simhei.ttf",
+                "fonts/simkai.ttf",
+                "fonts/simfang.ttf",
+                "fonts/malgun.ttf",
                 "msyh.ttc",
                 "simsun.ttc",
                 "msyhbd.ttc",
                 "simhei.ttf",
+                "simkai.ttf",
+                "simfang.ttf",
                 "malgun.ttf"
             ]
         else:  # 미국
@@ -4778,10 +4895,27 @@ def create_simple_test_label(country, product_info):
                 print("✅ 기본 폰트 로드 성공")
             except Exception as default_font_error:
                 print(f"❌ 기본 폰트도 실패: {default_font_error}")
-                raise Exception("폰트를 로드할 수 없습니다")
+                # 배포 환경용 최종 폴백: 텍스트만 생성
+                print("⚠️ 폰트 로드 완전 실패, 텍스트만 반환")
+                return jsonify({
+                    'success': True,
+                    'label_data': {
+                        'text_content': f"라벨 생성 완료 (폰트 로드 실패: {default_font_error})",
+                        'image_path': None,
+                        'filename': None,
+                        'country': country,
+                        'label_type': 'text_only'
+                    },
+                    'ocr_info': {
+                        'processed_files': 0,
+                        'extracted_nutrition': False,
+                        'ocr_data': {},
+                        'ocr_used': False
+                    }
+                })
         
         def safe_draw_text(draw, position, text, font, fill):
-            """안전한 텍스트 그리기"""
+            """안전한 텍스트 그리기 (중국어 지원 강화)"""
             try:
                 if text is None:
                     text = ""
@@ -4791,11 +4925,23 @@ def create_simple_test_label(country, product_info):
                 if not text.strip():
                     text = "N/A"
                 
+                # 중국어 텍스트 인코딩 확인
+                if country == "중국":
+                    try:
+                        # UTF-8로 인코딩 확인
+                        text.encode('utf-8')
+                        print(f"✅ 중국어 텍스트 인코딩 확인: {text}")
+                    except UnicodeEncodeError as encode_error:
+                        print(f"⚠️ 중국어 텍스트 인코딩 오류: {text} - {encode_error}")
+                        text = text.encode('utf-8', errors='ignore').decode('utf-8')
+                
                 draw.text(position, text, fill=fill, font=font)
             except Exception as e:
                 print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
                 try:
-                    draw.text(position, "N/A", fill=fill, font=font)
+                    # 폴백: 기본 폰트로 시도
+                    fallback_font = ImageFont.load_default()
+                    draw.text(position, "N/A", fill=fill, font=fallback_font)
                 except Exception:
                     pass
         
@@ -5003,11 +5149,33 @@ def merge_ocr_and_user_input(user_input: dict, ocr_extracted: dict) -> dict:
 
 @app.route('/advanced_labels/<filename>')
 def serve_label_image(filename):
-    """생성된 라벨 이미지 서빙"""
+    """생성된 라벨 이미지 서빙 (배포 환경 지원)"""
     try:
-        return send_from_directory('advanced_labels', filename)
+        # advanced_labels 폴더에서 먼저 시도
+        if os.path.exists(os.path.join('advanced_labels', filename)):
+            return send_from_directory('advanced_labels', filename)
+        # 현재 디렉토리에서 시도 (배포 환경용)
+        elif os.path.exists(filename):
+            return send_from_directory('.', filename)
+        else:
+            return jsonify({'error': f'이미지를 찾을 수 없습니다: {filename}'}), 404
     except Exception as e:
-        return jsonify({'error': f'이미지를 찾을 수 없습니다: {str(e)}'}), 404
+        return jsonify({'error': f'이미지 서빙 실패: {str(e)}'}), 404
+
+@app.route('/api/download-label/<filename>')
+def download_label(filename):
+    """라벨 이미지 다운로드 API (배포 환경 지원)"""
+    try:
+        # advanced_labels 폴더에서 먼저 시도
+        if os.path.exists(os.path.join('advanced_labels', filename)):
+            return send_from_directory('advanced_labels', filename, as_attachment=True)
+        # 현재 디렉토리에서 시도 (배포 환경용)
+        elif os.path.exists(filename):
+            return send_from_directory('.', filename, as_attachment=True)
+        else:
+            return jsonify({'error': f'이미지를 찾을 수 없습니다: {filename}'}), 404
+    except Exception as e:
+        return jsonify({'error': f'이미지 다운로드 실패: {str(e)}'}), 404
 
 @app.route('/generated_documents/<filename>')
 def serve_document(filename):

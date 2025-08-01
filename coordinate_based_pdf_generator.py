@@ -49,45 +49,31 @@ class CoordinateBasedPDFGenerator:
     
     def _load_coordinate_templates(self) -> Dict[str, Dict]:
         """좌표 템플릿 로드"""
+        # 현재 작업 디렉토리 확인
+        current_dir = os.getcwd()
+        print(f"📁 현재 작업 디렉토리: {current_dir}")
+        
+        # 템플릿 파일 경로 확인
+        commercial_template = "uploaded_templates/상업송장 빈 템플릿.pdf"
+        packing_template = "uploaded_templates/포장명세서 빈 템플릿.pdf"
+        
+        # 절대 경로로 변환
+        commercial_template_abs = os.path.abspath(commercial_template)
+        packing_template_abs = os.path.abspath(packing_template)
+        
+        print(f"📄 상업송장 템플릿 경로: {commercial_template_abs}")
+        print(f"📄 포장명세서 템플릿 경로: {packing_template_abs}")
+        print(f"📄 상업송장 템플릿 존재: {os.path.exists(commercial_template_abs)}")
+        print(f"📄 포장명세서 템플릿 존재: {os.path.exists(packing_template_abs)}")
+        
         templates = {
             "상업송장": {
-                "template_file": "uploaded_templates/상업송장 빈 템플릿.pdf",
-                "coordinates": {
-                    "seller_name": {"x": 100, "y": 750, "font_size": 9},
-                    "seller_address": {"x": 100, "y": 730, "font_size": 7},
-                    "buyer_name": {"x": 350, "y": 750, "font_size": 9},
-                    "buyer_address": {"x": 350, "y": 730, "font_size": 7},
-                    "invoice_number": {"x": 100, "y": 680, "font_size": 9},
-                    "invoice_date": {"x": 350, "y": 680, "font_size": 9},
-                    "product_name": {"x": 100, "y": 620, "font_size": 9},
-                    "quantity": {"x": 300, "y": 620, "font_size": 9},
-                    "unit_price": {"x": 400, "y": 620, "font_size": 9},
-                    "total_amount": {"x": 500, "y": 620, "font_size": 9},
-                    "origin": {"x": 100, "y": 580, "font_size": 9},
-                    "hs_code": {"x": 300, "y": 580, "font_size": 9},
-                    "payment_terms": {"x": 100, "y": 540, "font_size": 7},
-                    "shipping_terms": {"x": 350, "y": 540, "font_size": 7}
-                }
+                "template_file": commercial_template_abs if os.path.exists(commercial_template_abs) else commercial_template,
+                "coordinates": {}  # 사용자 정의 좌표 파일 사용
             },
             "포장명세서": {
-                "template_file": "uploaded_templates/포장명세서 빈 템플릿.pdf",
-                "coordinates": {
-                    "seller_name": {"x": 100, "y": 750, "font_size": 9},
-                    "seller_address": {"x": 100, "y": 730, "font_size": 7},
-                    "buyer_name": {"x": 350, "y": 750, "font_size": 9},
-                    "buyer_address": {"x": 350, "y": 730, "font_size": 7},
-                    "packing_list_number": {"x": 100, "y": 680, "font_size": 9},
-                    "packing_date": {"x": 350, "y": 680, "font_size": 9},
-                    "product_name": {"x": 100, "y": 620, "font_size": 9},
-                    "description": {"x": 200, "y": 620, "font_size": 7},
-                    "quantity": {"x": 350, "y": 620, "font_size": 9},
-                    "package_type": {"x": 450, "y": 620, "font_size": 9},
-                    "gross_weight": {"x": 100, "y": 580, "font_size": 9},
-                    "net_weight": {"x": 250, "y": 580, "font_size": 9},
-                    "dimensions": {"x": 400, "y": 580, "font_size": 9},
-                    "marks_numbers": {"x": 100, "y": 540, "font_size": 7},
-                    "vessel_flight": {"x": 100, "y": 500, "font_size": 6}  # vessel/flight 필드 추가, 매우 작은 폰트
-                }
+                "template_file": packing_template_abs if os.path.exists(packing_template_abs) else packing_template,
+                "coordinates": {}  # 사용자 정의 좌표 파일 사용
             }
         }
         return templates
@@ -95,12 +81,25 @@ class CoordinateBasedPDFGenerator:
     def load_custom_coordinates(self, coordinate_file: str) -> Dict[str, Dict]:
         """사용자 정의 좌표 파일 로드"""
         try:
+            # 절대 경로로 변환 시도
+            if not os.path.isabs(coordinate_file):
+                coordinate_file_abs = os.path.abspath(coordinate_file)
+                print(f"📁 좌표 파일 절대 경로: {coordinate_file_abs}")
+                print(f"📁 좌표 파일 존재: {os.path.exists(coordinate_file_abs)}")
+                
+                if os.path.exists(coordinate_file_abs):
+                    coordinate_file = coordinate_file_abs
+                else:
+                    print(f"⚠️ 절대 경로에서 파일을 찾을 수 없음, 상대 경로 시도")
+            
             with open(coordinate_file, 'r', encoding='utf-8') as f:
                 coordinates = json.load(f)
             print(f"✅ 사용자 정의 좌표 로드 성공: {coordinate_file}")
             return coordinates
         except Exception as e:
             print(f"❌ 사용자 정의 좌표 로드 실패: {e}")
+            print(f"📁 시도한 파일 경로: {coordinate_file}")
+            print(f"📁 현재 디렉토리: {os.getcwd()}")
             return {}
     
     def generate_pdf_with_coordinates(self, doc_type: str, data: Dict, 
@@ -138,16 +137,29 @@ class CoordinateBasedPDFGenerator:
             output_path = f"generated_documents/{safe_name}_{timestamp}.pdf"
         
         # 디렉토리 생성
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_dir = os.path.dirname(output_path)
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"✅ 출력 디렉토리 생성/확인: {output_dir}")
+        except Exception as e:
+            print(f"❌ 출력 디렉토리 생성 실패: {e}")
+            # 현재 디렉토리에 생성
+            output_path = os.path.basename(output_path)
+            print(f"⚠️ 현재 디렉토리에 생성: {output_path}")
         
         # 템플릿 파일 경로
         template_file = self.coordinate_templates.get(doc_type, {}).get("template_file")
         
+        print(f"🔍 템플릿 파일 확인: {template_file}")
+        print(f"📁 템플릿 파일 존재: {os.path.exists(template_file) if template_file else False}")
+        
         if template_file and os.path.exists(template_file):
             # 기존 템플릿에 데이터 추가
+            print(f"✅ 기존 템플릿에 데이터 추가: {template_file}")
             self._fill_template_pdf(template_file, data, coordinates, output_path)
         else:
             # 새 PDF 생성
+            print(f"⚠️ 새 PDF 생성 (템플릿 파일 없음)")
             self._create_new_pdf(data, coordinates, output_path)
         
         print(f"✅ 좌표 기반 PDF 생성 완료: {output_path}")
