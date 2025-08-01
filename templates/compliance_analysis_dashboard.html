@@ -574,7 +574,9 @@
                     document.getElementById('errorMessage').textContent = data.error;
                     document.getElementById('errorSection').style.display = 'block';
                 } else {
-                    displayResults(data.analysis);
+                    // 백엔드 응답 구조에 맞게 수정
+                    const analysisData = data.compliance_analysis || data.analysis || data;
+                    displayResults(analysisData);
                     document.getElementById('resultsSection').style.display = 'block';
                 }
             })
@@ -588,7 +590,7 @@
         function displayResults(analysis) {
             // 점수 원형 표시
             const scoreCircle = document.getElementById('scoreCircle');
-            const score = Math.round(analysis.overall_score);
+            const score = Math.round(analysis.overall_score || 0);
             
             if (score >= 80) {
                 scoreCircle.className = 'score-circle score-excellent';
@@ -601,13 +603,23 @@
             scoreCircle.textContent = score + '%';
             
             // 준수 상태
-            document.getElementById('complianceStatus').textContent = analysis.compliance_status;
+            document.getElementById('complianceStatus').textContent = analysis.compliance_status || '분석 완료';
             
             // 분석 상세 내용
             const analysisDetails = document.getElementById('analysisDetails');
             let detailsHtml = '';
             
-            if (analysis.missing_requirements.length > 0) {
+            // suggestions 처리 (백엔드 응답 구조에 맞게)
+            if (analysis.suggestions && analysis.suggestions.length > 0) {
+                detailsHtml += '<div class="alert alert-info"><strong>💡 권장사항:</strong><br>';
+                analysis.suggestions.forEach(suggestion => {
+                    detailsHtml += `• ${suggestion}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            // missing_requirements 처리 (호환성)
+            if (analysis.missing_requirements && analysis.missing_requirements.length > 0) {
                 detailsHtml += '<div class="alert alert-warning"><strong>❌ 부족한 서류:</strong><br>';
                 analysis.missing_requirements.forEach(req => {
                     detailsHtml += `• ${req}<br>`;
@@ -615,7 +627,8 @@
                 detailsHtml += '</div>';
             }
             
-            if (analysis.critical_issues.length > 0) {
+            // critical_issues 처리
+            if (analysis.critical_issues && analysis.critical_issues.length > 0) {
                 detailsHtml += '<div class="alert alert-danger"><strong>🚨 긴급 개선사항:</strong><br>';
                 analysis.critical_issues.forEach(issue => {
                     detailsHtml += `• ${issue}<br>`;
@@ -623,18 +636,29 @@
                 detailsHtml += '</div>';
             }
             
-            if (analysis.minor_issues.length > 0) {
-                detailsHtml += '<div class="alert alert-info"><strong>⚠️ 권장 개선사항:</strong><br>';
+            // major_issues 처리
+            if (analysis.major_issues && analysis.major_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-warning"><strong>⚠️ 주요 개선사항:</strong><br>';
+                analysis.major_issues.forEach(issue => {
+                    detailsHtml += `• ${issue}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
+            
+            // minor_issues 처리
+            if (analysis.minor_issues && analysis.minor_issues.length > 0) {
+                detailsHtml += '<div class="alert alert-info"><strong>💡 권장 개선사항:</strong><br>';
                 analysis.minor_issues.forEach(issue => {
                     detailsHtml += `• ${issue}<br>`;
                 });
                 detailsHtml += '</div>';
             }
             
-            if (analysis.improvement_suggestions.length > 0) {
+            // improvement_suggestions 처리 (호환성)
+            if (analysis.improvement_suggestions && analysis.improvement_suggestions.length > 0) {
                 detailsHtml += '<div class="alert alert-success"><strong>💡 개선 방안:</strong><br>';
                 analysis.improvement_suggestions.forEach(suggestion => {
-                    detailsHtml += `${suggestion}<br>`;
+                    detailsHtml += `• ${suggestion}<br>`;
                 });
                 detailsHtml += '</div>';
             }

@@ -707,7 +707,9 @@
                     document.getElementById('errorMessage').textContent = data.error;
                     document.getElementById('errorSection').style.display = 'block';
                 } else {
-                    displayResults(data.compliance_analysis || data.analysis);
+                    // 백엔드 응답 구조에 맞게 수정
+                    const analysisData = data.compliance_analysis || data.analysis || data;
+                    displayResults(analysisData);
                     document.getElementById('resultsSection').style.display = 'block';
                 }
             })
@@ -735,11 +737,20 @@
             scoreCircle.textContent = score + '%';
             
             // 준수 상태
-            document.getElementById('complianceStatus').textContent = analysis.compliance_status || '분석 중';
+            document.getElementById('complianceStatus').textContent = analysis.compliance_status || '분석 완료';
             
             // 분석 상세 내용
             const analysisDetails = document.getElementById('analysisDetails');
             let detailsHtml = '';
+            
+            // suggestions 처리 (백엔드 응답 구조에 맞게)
+            if (analysis.suggestions && analysis.suggestions.length > 0) {
+                detailsHtml += '<div class="alert alert-info"><strong>💡 권장사항:</strong><br>';
+                analysis.suggestions.forEach(suggestion => {
+                    detailsHtml += `• ${suggestion}<br>`;
+                });
+                detailsHtml += '</div>';
+            }
             
             // 주요 문제점들 표시
             if (analysis.critical_issues && analysis.critical_issues.length > 0) {
