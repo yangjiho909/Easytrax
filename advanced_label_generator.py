@@ -96,69 +96,139 @@ class AdvancedLabelGenerator:
         ]
     
     def generate_china_2027_label(self, product_info: Dict) -> Image.Image:
-        """2027년 중국 GB 7718-2025 규정 라벨 생성"""
+        """2027년 중국 GB 7718-2025 규정 라벨 생성 (개선된 버전)"""
         
-        # 이미지 생성
-        image = Image.new('RGB', (self.label_width, self.label_height), self.background_color)
-        draw = ImageDraw.Draw(image)
-        
-        y_position = 20
-        
-        # 1. 제품명 (사용자 입력 우선, 중국어 변환)
-        product_name = product_info.get("product_name", product_info.get("name", "라면"))
-        # 간단한 중국어 변환 (실제로는 번역 API 사용 권장)
-        chinese_name_map = {
-            "라면": "拉面", "김치": "泡菜", "된장": "大酱", "고추장": "辣椒酱",
-            "라면": "拉面", "김치": "泡菜", "된장": "大酱", "고추장": "辣椒酱"
-        }
-        product_name_chinese = chinese_name_map.get(product_name, f"{product_name}")
-        draw.text((20, y_position), product_name_chinese, fill=self.accent_color, font=self.title_font)
-        y_position += 40
-        
-        # 2. 원산지 (사용자 입력 우선)
-        origin = product_info.get("origin", "대한민국")
-        origin_chinese = "原产国：韩国" if origin == "대한민국" else f"原产国：{origin}"
-        draw.text((20, y_position), origin_chinese, fill=self.text_color, font=self.body_font)
-        y_position += 30
-        
-        # 3. 제조사 정보 (사용자 입력 우선)
-        manufacturer = product_info.get("manufacturer", "한국식품(주)")
-        manufacturer_chinese = "韩国食品公司" if manufacturer == "한국식품(주)" else f"{manufacturer}"
-        draw.text((20, y_position), f"制造商：{manufacturer_chinese}", fill=self.text_color, font=self.body_font)
-        y_position += 30
-        
-        # 4. 유통기한 (사용자 입력 우선)
-        expiry_date = product_info.get("expiry_date", "2026-12-31")
-        expiry_chinese = f"到期日：{expiry_date}"
-        draw.text((20, y_position), expiry_chinese, fill=self.text_color, font=self.body_font)
-        y_position += 40
-        
-        # 구분선
-        draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=2)
-        y_position += 20
-        
-        # 5. 영양성분표 (1+6 체계)
-        y_position = self._draw_china_nutrition_table(draw, product_info, y_position)
-        
-        # 6. 성분표 (알레르기 성분 강조)
-        y_position = self._draw_china_ingredients(draw, product_info, y_position)
-        
-        # 7. 알레르기 정보 (8대 알레르기)
-        y_position = self._draw_china_allergy_info(draw, product_info, y_position)
-        
-        # 8. 경고 문구 (2027년 의무)
-        y_position = self._draw_china_warning(draw, y_position)
-        
-        # 9. 디지털 라벨 QR코드
-        y_position = self._draw_digital_label_qr(draw, product_info, y_position)
-        
-        # 10. 보관 방법
-        y_position = self._draw_storage_info(draw, product_info, y_position)
-        
-        # 11. 제조사 상세 정보
-        self._draw_manufacturer_details(draw, product_info, y_position)
-        
-        return image
+        try:
+            print("🇨🇳 중국어 고급 라벨 생성 시작")
+            
+            # 중국어 전용 폰트 로딩 시도
+            self._load_chinese_fonts()
+            
+            # 이미지 생성
+            image = Image.new('RGB', (self.label_width, self.label_height), self.background_color)
+            draw = ImageDraw.Draw(image)
+            
+            y_position = 20
+            
+            # 안전한 텍스트 그리기 함수
+            def safe_draw_text(draw, position, text, font, fill):
+                try:
+                    if text is None:
+                        text = ""
+                    elif not isinstance(text, str):
+                        text = str(text)
+                    
+                    if not text.strip():
+                        text = "N/A"
+                    
+                    draw.text(position, text, fill=fill, font=font)
+                except Exception as e:
+                    print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                    try:
+                        draw.text(position, "N/A", fill=fill, font=font)
+                    except:
+                        pass
+            
+            # 1. 제품명 (사용자 입력 우선, 중국어 변환)
+            product_name = product_info.get("product_name", product_info.get("name", "라면"))
+            # 간단한 중국어 변환 (실제로는 번역 API 사용 권장)
+            chinese_name_map = {
+                "라면": "拉面", "김치": "泡菜", "된장": "大酱", "고추장": "辣椒酱"
+            }
+            product_name_chinese = chinese_name_map.get(product_name, f"{product_name}")
+            safe_draw_text(draw, (20, y_position), product_name_chinese, self.title_font, self.accent_color)
+            y_position += 40
+            
+            # 2. 원산지 (사용자 입력 우선)
+            origin = product_info.get("origin", "대한민국")
+            origin_chinese = "原产国：韩国" if origin == "대한민국" else f"原产国：{origin}"
+            safe_draw_text(draw, (20, y_position), origin_chinese, self.body_font, self.text_color)
+            y_position += 30
+            
+            # 3. 제조사 정보 (사용자 입력 우선)
+            manufacturer = product_info.get("manufacturer", "한국식품(주)")
+            manufacturer_chinese = "韩国食品公司" if manufacturer == "한국식품(주)" else f"{manufacturer}"
+            safe_draw_text(draw, (20, y_position), f"制造商：{manufacturer_chinese}", self.body_font, self.text_color)
+            y_position += 30
+            
+            # 4. 유통기한 (사용자 입력 우선)
+            expiry_date = product_info.get("expiry_date", "2026-12-31")
+            expiry_chinese = f"到期日：{expiry_date}"
+            safe_draw_text(draw, (20, y_position), expiry_chinese, self.body_font, self.text_color)
+            y_position += 40
+            
+            # 구분선
+            draw.line([(20, y_position), (self.label_width-20, y_position)], fill=self.accent_color, width=2)
+            y_position += 20
+            
+            # 5. 영양성분표 (1+6 체계)
+            y_position = self._draw_china_nutrition_table(draw, product_info, y_position)
+            
+            # 6. 성분표 (알레르기 성분 강조)
+            y_position = self._draw_china_ingredients(draw, product_info, y_position)
+            
+            # 7. 알레르기 정보 (8대 알레르기)
+            y_position = self._draw_china_allergy_info(draw, product_info, y_position)
+            
+            # 8. 경고 문구 (2027년 의무)
+            y_position = self._draw_china_warning(draw, y_position)
+            
+            # 9. 디지털 라벨 QR코드
+            y_position = self._draw_digital_label_qr(draw, product_info, y_position)
+            
+            # 10. 보관 방법
+            y_position = self._draw_storage_info(draw, product_info, y_position)
+            
+            # 11. 제조사 상세 정보
+            self._draw_manufacturer_details(draw, product_info, y_position)
+            
+            print("✅ 중국어 고급 라벨 생성 완료")
+            return image
+            
+        except Exception as e:
+            print(f"❌ 중국어 고급 라벨 생성 실패: {e}")
+            # 폴백: 기본 중국어 라벨 생성
+            try:
+                from nutrition_label_generator import NutritionLabelGenerator
+                basic_generator = NutritionLabelGenerator()
+                return basic_generator.generate_chinese_nutrition_label(product_info)
+            except Exception as e2:
+                print(f"❌ 기본 중국어 라벨 생성도 실패: {e2}")
+                # 최종 폴백: 기본 이미지 생성
+                fallback_image = Image.new('RGB', (self.label_width, self.label_height), self.background_color)
+                fallback_draw = ImageDraw.Draw(fallback_image)
+                fallback_draw.text((50, 50), "Chinese Label Generation Failed", fill=self.text_color)
+                fallback_draw.text((50, 100), f"Error: {str(e)}", fill=self.warning_color)
+                return fallback_image
+    
+    def _load_chinese_fonts(self):
+        """중국어 전용 폰트 로딩"""
+        try:
+            chinese_fonts = [
+                "C:/Windows/Fonts/msyh.ttc",      # Microsoft YaHei
+                "C:/Windows/Fonts/simsun.ttc",    # SimSun
+                "C:/Windows/Fonts/simhei.ttf",    # SimHei
+                "msyh.ttc",
+                "simsun.ttc",
+                "simhei.ttf"
+            ]
+            
+            for font_path in chinese_fonts:
+                try:
+                    self.title_font = ImageFont.truetype(font_path, 36)
+                    self.header_font = ImageFont.truetype(font_path, 28)
+                    self.body_font = ImageFont.truetype(font_path, 22)
+                    self.small_font = ImageFont.truetype(font_path, 20)
+                    self.allergy_font = ImageFont.truetype(font_path, 22)
+                    print(f"✅ 중국어 폰트 로드 성공: {font_path}")
+                    return
+                except:
+                    continue
+            
+            print("⚠️ 중국어 폰트를 찾을 수 없어 기본 폰트를 사용합니다.")
+            
+        except Exception as e:
+            print(f"⚠️ 중국어 폰트 로드 실패: {e}")
     
     def generate_us_2025_label(self, product_info: Dict) -> Image.Image:
         """2025년 미국 FDA 새로운 라벨링 규정 라벨 생성"""
@@ -221,16 +291,34 @@ class AdvancedLabelGenerator:
         return image
     
     def _draw_china_nutrition_table(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
-        """중국 1+6 영양성분표 그리기"""
+        """중국 1+6 영양성분표 그리기 (안전한 버전)"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 제목
-        draw.text((20, y_position), "营养成分表 (每100g)", fill=self.accent_color, font=self.header_font)
+        safe_draw_text(draw, (20, y_position), "营养成分表 (每100g)", self.header_font, self.accent_color)
         y_position += 30
         
         # 표 헤더
-        draw.text((20, y_position), "项目", fill=self.text_color, font=self.body_font)
-        draw.text((200, y_position), "含量", fill=self.text_color, font=self.body_font)
-        draw.text((300, y_position), "营养素参考值%", fill=self.text_color, font=self.body_font)
+        safe_draw_text(draw, (20, y_position), "项目", self.body_font, self.text_color)
+        safe_draw_text(draw, (200, y_position), "含量", self.body_font, self.text_color)
+        safe_draw_text(draw, (300, y_position), "营养素参考值%", self.body_font, self.text_color)
         y_position += 25
         
         # 구분선
@@ -250,8 +338,8 @@ class AdvancedLabelGenerator:
         }
         
         for nutrient, value in china_nutrition.items():
-            draw.text((20, y_position), nutrient, fill=self.text_color, font=self.body_font)
-            draw.text((200, y_position), value, fill=self.text_color, font=self.body_font)
+            safe_draw_text(draw, (20, y_position), nutrient, self.body_font, self.text_color)
+            safe_draw_text(draw, (200, y_position), value, self.body_font, self.text_color)
             
             # NRV% 계산 (예시)
             if "kcal" in value:
@@ -263,7 +351,7 @@ class AdvancedLabelGenerator:
             else:
                 nrv = "10%"
             
-            draw.text((300, y_position), nrv, fill=self.text_color, font=self.body_font)
+            safe_draw_text(draw, (300, y_position), nrv, self.body_font, self.text_color)
             y_position += 20
         
         y_position += 20
@@ -330,10 +418,28 @@ class AdvancedLabelGenerator:
         return y_position
     
     def _draw_china_ingredients(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
-        """중국 성분표 (알레르기 성분 강조)"""
+        """중국 성분표 (알레르기 성분 강조) - 안전한 버전"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 제목
-        draw.text((20, y_position), "配料表", fill=self.accent_color, font=self.header_font)
+        safe_draw_text(draw, (20, y_position), "配料表", self.header_font, self.accent_color)
         y_position += 25
         
         # 성분 목록
@@ -348,7 +454,7 @@ class AdvancedLabelGenerator:
             font = self.allergy_font if is_allergy else self.body_font
             
             prefix = "• " if not is_allergy else "⚠ "
-            draw.text((20, y_position), f"{prefix}{ingredient}", fill=color, font=font)
+            safe_draw_text(draw, (20, y_position), f"{prefix}{ingredient}", font, color)
             y_position += 18
         
         y_position += 10
@@ -391,10 +497,28 @@ class AdvancedLabelGenerator:
         return y_position
     
     def _draw_china_allergy_info(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
-        """중국 알레르기 정보 (8대 알레르기)"""
+        """중국 알레르기 정보 (8대 알레르기) - 안전한 버전"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 제목
-        draw.text((20, y_position), "过敏原信息", fill=self.warning_color, font=self.header_font)
+        safe_draw_text(draw, (20, y_position), "过敏原信息", self.header_font, self.warning_color)
         y_position += 25
         
         # 사용자 입력 알레르기 정보
@@ -406,16 +530,16 @@ class AdvancedLabelGenerator:
                 "땅콩": "花生", "견과류": "坚果", "조개류": "贝类", "어류": "鱼类"
             }
             allergy_ingredients = [allergy_map.get(allergy, allergy) for allergy in allergies]
-            draw.text((20, y_position), "含有: " + ", ".join(allergy_ingredients), 
-                     fill=self.warning_color, font=self.body_font)
+            allergy_text = "含有: " + ", ".join(allergy_ingredients)
+            safe_draw_text(draw, (20, y_position), allergy_text, self.body_font, self.warning_color)
         else:
-            draw.text((20, y_position), "含有: 无", fill=self.text_color, font=self.body_font)
+            safe_draw_text(draw, (20, y_position), "含有: 无", self.body_font, self.text_color)
         
         y_position += 25
         
         # 주의사항
-        draw.text((20, y_position), "※ 本产品含有过敏原成分，请过敏体质者注意。", 
-                 fill=self.warning_color, font=self.small_font)
+        safe_draw_text(draw, (20, y_position), "※ 本产品含有过敏原成分，请过敏体质者注意。", 
+                     self.small_font, self.warning_color)
         y_position += 20
         
         return y_position
@@ -451,11 +575,29 @@ class AdvancedLabelGenerator:
         return y_position
     
     def _draw_china_warning(self, draw: ImageDraw.Draw, y_position: int) -> int:
-        """중국 2027년 의무 경고 문구"""
+        """중국 2027년 의무 경고 문구 - 안전한 버전"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 경고 문구
         warning_text = "儿童及青少年应避免过量摄入钠、脂肪、糖"
-        draw.text((20, y_position), warning_text, fill=self.warning_color, font=self.body_font)
+        safe_draw_text(draw, (20, y_position), warning_text, self.body_font, self.warning_color)
         y_position += 25
         
         return y_position
@@ -531,15 +673,33 @@ class AdvancedLabelGenerator:
         return y_position
     
     def _draw_storage_info(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
-        """보관 방법 (중국어)"""
+        """보관 방법 (중국어) - 안전한 버전"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 제목
-        draw.text((20, y_position), "储存方法", fill=self.accent_color, font=self.header_font)
+        safe_draw_text(draw, (20, y_position), "储存方法", self.header_font, self.accent_color)
         y_position += 25
         
         # 보관 방법
         storage_method = product_info.get("storage_method_chinese", "常温保存，避免阳光直射")
-        draw.text((20, y_position), storage_method, fill=self.text_color, font=self.body_font)
+        safe_draw_text(draw, (20, y_position), storage_method, self.body_font, self.text_color)
         y_position += 25
         
         return y_position
@@ -559,15 +719,33 @@ class AdvancedLabelGenerator:
         return y_position
     
     def _draw_manufacturer_details(self, draw: ImageDraw.Draw, product_info: Dict, y_position: int) -> int:
-        """제조사 상세 정보 (중국어)"""
+        """제조사 상세 정보 (중국어) - 안전한 버전"""
+        
+        def safe_draw_text(draw, position, text, font, fill):
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
         
         # 제조사 정보
         address = product_info.get("address_chinese", "韩国首尔江南区")
         phone = product_info.get("phone", "02-1234-5678")
         
-        draw.text((20, y_position), f"地址: {address}", fill=self.text_color, font=self.small_font)
+        safe_draw_text(draw, (20, y_position), f"地址: {address}", self.small_font, self.text_color)
         y_position += 15
-        draw.text((20, y_position), f"电话: {phone}", fill=self.text_color, font=self.small_font)
+        safe_draw_text(draw, (20, y_position), f"电话: {phone}", self.small_font, self.text_color)
         y_position += 15
         
         return y_position

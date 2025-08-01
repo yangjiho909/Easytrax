@@ -2439,12 +2439,24 @@ def api_compliance_analysis():
                     uploaded_documents = data.get('uploaded_documents', [])
                     prepared_documents = data.get('prepared_documents', [])
                     labeling_info = data.get('labeling_info', {})
+                else:
+                    # JSON이 비어있는 경우 기본값 설정
+                    country = ''
+                    product_type = '식품'
+                    use_ocr = True
+                    company_info = {}
+                    product_info = {}
+                    uploaded_documents = []
+                    prepared_documents = []
+                    labeling_info = {}
             except Exception as e:
                 print(f"⚠️ JSON 파싱 오류: {e}")
+                print(f"요청 내용: {request.get_data(as_text=True)[:200]}...")
                 return jsonify({
-                    'error': '잘못된 JSON 형식입니다.',
-                    'success': False
-                })
+                    'error': '잘못된 JSON 형식입니다. 올바른 JSON 형식으로 요청해주세요.',
+                    'success': False,
+                    'details': str(e)
+                }), 400
         else:
             # FormData 요청 처리
             country = request.form.get('country', '')
@@ -2484,8 +2496,9 @@ def api_compliance_analysis():
         if not country:
             return jsonify({
                 'error': '국가를 선택해주세요.',
-                'success': False
-            })
+                'success': False,
+                'message': '분석을 위해 국가를 선택해주세요.'
+            }), 400
         
         # 파일 업로드 처리 (최적화된 버전)
         uploaded_files = []
@@ -2559,13 +2572,7 @@ def api_compliance_analysis():
                     pass
             
             raise e
-        
-    except Exception as e:
-        print(f"❌ 준수성 분석 오류: {str(e)}")
-        return jsonify({
-            'error': f'분석 중 오류가 발생했습니다: {str(e)}',
-            'success': False
-        })
+
 
 def perform_optimized_compliance_analysis(country, product_type, uploaded_files, uploaded_documents, company_info, product_info):
     """최적화된 OCR/문서분석 기반 준수성 분석"""
@@ -2956,7 +2963,8 @@ def perform_basic_compliance_analysis(country, product_type, company_info, produ
         print(f"❌ 기본 분석 실패: {e}")
         return jsonify({
             'error': f'기본 분석 중 오류가 발생했습니다: {str(e)}',
-            'success': False
+            'success': False,
+            'message': '기본 분석 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
         }), 500
 
 @app.route('/api/test-compliance', methods=['POST'])
@@ -2966,12 +2974,21 @@ def test_compliance_api():
     
     try:
         # JSON 데이터 받기
-        data = request.get_json()
-        if not data:
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({
+                    'error': 'JSON 데이터가 필요합니다.',
+                    'success': False,
+                    'message': '테스트를 위해 JSON 데이터를 포함해주세요.'
+                }), 400
+        except Exception as e:
             return jsonify({
-                'error': 'JSON 데이터가 필요합니다.',
-                'success': False
-            })
+                'error': '잘못된 JSON 형식입니다.',
+                'success': False,
+                'message': '올바른 JSON 형식으로 요청해주세요.',
+                'details': str(e)
+            }), 400
         
         country = data.get('country', '중국')
         product_type = data.get('product_type', '라면')
@@ -3746,8 +3763,15 @@ def api_document_generation():
                 
                 try:
                     # 좌표 기반 PDF 생성 시도
-                    from coordinate_based_pdf_generator import CoordinateBasedPDFGenerator
-                    coordinate_generator = CoordinateBasedPDFGenerator()
+                    print(f"🔍 좌표 기반 PDF 생성 시도: {doc_name}")
+                    
+                    try:
+                        from coordinate_based_pdf_generator import CoordinateBasedPDFGenerator
+                        coordinate_generator = CoordinateBasedPDFGenerator()
+                        print("✅ CoordinateBasedPDFGenerator 로드 성공")
+                    except ImportError as e:
+                        print(f"❌ CoordinateBasedPDFGenerator 로드 실패: {e}")
+                        raise ImportError("좌표 기반 PDF 생성기를 찾을 수 없습니다")
                     
                     # 사용자 정의 좌표 파일 경로 설정
                     coordinate_file = None
@@ -3755,6 +3779,11 @@ def api_document_generation():
                         coordinate_file = "uploaded_templates/상업송장 좌표 반영.json"
                     elif doc_name == "포장명세서":
                         coordinate_file = "uploaded_templates/포장명세서 좌표 반영.json"
+                    
+                    # 좌표 파일 존재 확인
+                    if coordinate_file and not os.path.exists(coordinate_file):
+                        print(f"⚠️ 좌표 파일이 없습니다: {coordinate_file}")
+                        coordinate_file = None
                     
                     # 데이터 준비 - 실제 좌표 파일의 필드명에 맞춰 매핑
                     pdf_data = {}
@@ -3827,22 +3856,32 @@ def api_document_generation():
                         print(f"❌ PDF 파일이 생성되지 않음: {pdf_path}")
                         raise Exception("PDF 파일 생성 실패")
                     
-                except ImportError:
+                except ImportError as import_error:
+                    print(f"❌ ImportError: {import_error}")
                     # 좌표 기반 생성기가 없으면 기존 방식 사용
                     try:
+                        print("🔄 대체 PDF 생성 방식 시도...")
                         from enhanced_template_pdf_generator import enhanced_template_pdf_generator
                         enhanced_template_pdf_generator.generate_filled_pdf(
                             doc_name, 
                             {"content": content, "company_info": company_info, "product_info": product_info}, 
                             pdf_path
                         )
+                        print("✅ enhanced_template_pdf_generator로 PDF 생성 성공")
                     except ImportError:
                         # enhanced_template_pdf_generator가 없으면 간단한 PDF 생성
                         print("⚠️ enhanced_template_pdf_generator 없음, 간단한 PDF 생성")
-                        from simple_pdf_generator import generate_simple_pdf
-                        generate_simple_pdf(content, pdf_path, doc_name)
+                        try:
+                            from simple_pdf_generator import generate_simple_pdf
+                            generate_simple_pdf(content, pdf_path, doc_name)
+                            print("✅ simple_pdf_generator로 PDF 생성 성공")
+                        except ImportError:
+                            print("❌ 모든 PDF 생성기 로드 실패, 텍스트 파일로 대체")
+                            raise ImportError("PDF 생성기를 찾을 수 없습니다")
                 except Exception as pdf_gen_error:
                     print(f"❌ PDF 생성 오류: {pdf_gen_error}")
+                    import traceback
+                    print(f"📋 상세 오류: {traceback.format_exc()}")
                     # 텍스트 파일로 대체
                     txt_filename = pdf_filename.replace('.pdf', '.txt')
                     txt_path = os.path.join("generated_documents", txt_filename)
@@ -4682,7 +4721,7 @@ def translate_allergies(allergies, country):
     return translated_allergies
 
 def create_simple_test_label(country, product_info):
-    """간단한 테스트용 라벨 생성 (국가별 언어 지원)"""
+    """간단한 테스트용 라벨 생성 (국가별 언어 지원) - 개선된 버전"""
     try:
         from PIL import Image, ImageDraw, ImageFont
         
@@ -4740,6 +4779,25 @@ def create_simple_test_label(country, product_info):
                 print(f"❌ 기본 폰트도 실패: {default_font_error}")
                 raise Exception("폰트를 로드할 수 없습니다")
         
+        def safe_draw_text(draw, position, text, font, fill):
+            """안전한 텍스트 그리기"""
+            try:
+                if text is None:
+                    text = ""
+                elif not isinstance(text, str):
+                    text = str(text)
+                
+                if not text.strip():
+                    text = "N/A"
+                
+                draw.text(position, text, fill=fill, font=font)
+            except Exception as e:
+                print(f"⚠️ 텍스트 그리기 실패: {text} - {e}")
+                try:
+                    draw.text(position, "N/A", fill=fill, font=font)
+                except:
+                    pass
+        
         y_position = 30
         
         # 제목 (국가별 언어)
@@ -4749,7 +4807,7 @@ def create_simple_test_label(country, product_info):
         else:  # 미국
             title = f"Nutrition Label - {country}"
             print(f"🔍 영어 라벨 생성 중: {title}")
-        draw.text((30, y_position), title, fill=(0, 0, 0), font=font)
+        safe_draw_text(draw, (30, y_position), title, font, (0, 0, 0))
         y_position += 50
         
         # 구분선
@@ -4762,7 +4820,7 @@ def create_simple_test_label(country, product_info):
             product_label = f"产品名称: {product_name}"
         else:  # 미국
             product_label = f"Product Name: {product_name}"
-        draw.text((30, y_position), product_label, fill=(0, 0, 0), font=font)
+        safe_draw_text(draw, (30, y_position), product_label, font, (0, 0, 0))
         y_position += 40
         
         # 영양성분 제목 (국가별 언어)
@@ -4770,7 +4828,7 @@ def create_simple_test_label(country, product_info):
             nutrition_title = "营养成分 (每100克):"
         else:  # 미국
             nutrition_title = "Nutrition Facts (per 100g):"
-        draw.text((30, y_position), nutrition_title, fill=(0, 0, 0), font=font)
+        safe_draw_text(draw, (30, y_position), nutrition_title, font, (0, 0, 0))
         y_position += 35
         
         # 영양성분 테이블 (국가별 언어)
@@ -4809,9 +4867,9 @@ def create_simple_test_label(country, product_info):
                              fill=(240, 240, 240))
             
             # 라벨
-            draw.text((table_x+10, y_position), label, fill=(0, 0, 0), font=font)
+            safe_draw_text(draw, (table_x+10, y_position), label, font, (0, 0, 0))
             # 값
-            draw.text((table_x+table_width//2, y_position), value, fill=(0, 0, 0), font=font)
+            safe_draw_text(draw, (table_x+table_width//2, y_position), value, font, (0, 0, 0))
             y_position += 30
         
         y_position += 20
@@ -4827,10 +4885,10 @@ def create_simple_test_label(country, product_info):
             else:  # 미국
                 allergy_title = "Allergy Information:"
             
-            draw.text((30, y_position), allergy_title, fill=(255, 0, 0), font=font)
+            safe_draw_text(draw, (30, y_position), allergy_title, font, (255, 0, 0))
             y_position += 30
             allergy_text = f"• {', '.join(translated_allergies)}"
-            draw.text((50, y_position), allergy_text, fill=(255, 0, 0), font=font)
+            safe_draw_text(draw, (50, y_position), allergy_text, font, (255, 0, 0))
             y_position += 40
         
         # 구분선
@@ -4843,7 +4901,7 @@ def create_simple_test_label(country, product_info):
             generated_text = f"生成时间: {timestamp}"
         else:  # 미국
             generated_text = f"Generated: {timestamp}"
-        draw.text((30, y_position), generated_text, fill=(100, 100, 100), font=font)
+        safe_draw_text(draw, (30, y_position), generated_text, font, (100, 100, 100))
         
         # 테두리 그리기
         draw.rectangle([(10, 10), (width-10, height-10)], outline=(0, 0, 0), width=2)
@@ -4854,7 +4912,17 @@ def create_simple_test_label(country, product_info):
         print(f"❌ 간단한 라벨 생성 오류: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise e
+        
+        # 폴백: 기본 이미지 생성
+        try:
+            fallback_image = Image.new('RGB', (800, 1000), (255, 255, 255))
+            fallback_draw = ImageDraw.Draw(fallback_image)
+            fallback_draw.text((50, 50), f"Label Generation Failed for {country}", fill=(0, 0, 0))
+            fallback_draw.text((50, 100), f"Error: {str(e)}", fill=(255, 0, 0))
+            return fallback_image
+        except:
+            # 최종 폴백
+            return Image.new('RGB', (800, 1000), (255, 255, 255))
 
 def merge_ocr_and_user_input(user_input: dict, ocr_extracted: dict) -> dict:
     """OCR 추출 정보와 사용자 입력 정보를 통합 (OR 조건 - 사용자 입력 우선)"""
