@@ -61,21 +61,50 @@ class CoordinateBasedPDFGenerator:
         commercial_template_abs = os.path.abspath(commercial_template)
         packing_template_abs = os.path.abspath(packing_template)
         
-        print(f"📄 상업송장 템플릿 경로: {commercial_template_abs}")
-        print(f"📄 포장명세서 템플릿 경로: {packing_template_abs}")
-        print(f"📄 상업송장 템플릿 존재: {os.path.exists(commercial_template_abs)}")
-        print(f"📄 포장명세서 템플릿 존재: {os.path.exists(packing_template_abs)}")
+        # 상대 경로도 확인
+        commercial_template_rel = os.path.join(current_dir, commercial_template)
+        packing_template_rel = os.path.join(current_dir, packing_template)
+        
+        print(f"📄 상업송장 템플릿 경로:")
+        print(f"  - 절대 경로: {commercial_template_abs}")
+        print(f"  - 상대 경로: {commercial_template_rel}")
+        print(f"  - 절대 경로 존재: {os.path.exists(commercial_template_abs)}")
+        print(f"  - 상대 경로 존재: {os.path.exists(commercial_template_rel)}")
+        
+        print(f"📄 포장명세서 템플릿 경로:")
+        print(f"  - 절대 경로: {packing_template_abs}")
+        print(f"  - 상대 경로: {packing_template_rel}")
+        print(f"  - 절대 경로 존재: {os.path.exists(packing_template_abs)}")
+        print(f"  - 상대 경로 존재: {os.path.exists(packing_template_rel)}")
+        
+        # uploaded_templates 폴더 내용 확인
+        templates_dir = "uploaded_templates"
+        if os.path.exists(templates_dir):
+            print(f"📁 {templates_dir} 폴더 내용:")
+            for file in os.listdir(templates_dir):
+                print(f"  - {file}")
+        else:
+            print(f"❌ {templates_dir} 폴더가 존재하지 않습니다!")
+        
+        # 최종 템플릿 파일 경로 결정
+        commercial_final = commercial_template_abs if os.path.exists(commercial_template_abs) else commercial_template_rel
+        packing_final = packing_template_abs if os.path.exists(packing_template_abs) else packing_template_rel
         
         templates = {
             "상업송장": {
-                "template_file": commercial_template_abs if os.path.exists(commercial_template_abs) else commercial_template,
+                "template_file": commercial_final,
                 "coordinates": {}  # 사용자 정의 좌표 파일 사용
             },
             "포장명세서": {
-                "template_file": packing_template_abs if os.path.exists(packing_template_abs) else packing_template,
+                "template_file": packing_final,
                 "coordinates": {}  # 사용자 정의 좌표 파일 사용
             }
         }
+        
+        print(f"✅ 최종 템플릿 설정:")
+        print(f"  - 상업송장: {templates['상업송장']['template_file']}")
+        print(f"  - 포장명세서: {templates['포장명세서']['template_file']}")
+        
         return templates
     
     def load_custom_coordinates(self, coordinate_file: str) -> Dict[str, Dict]:
