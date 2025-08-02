@@ -4958,7 +4958,7 @@ def api_document_generation():
                         'error_type': type(pdf_error).__name__,
                         'error_message': str(pdf_error)
                     }
-            })
+                })
         except Exception as e:
             print(f"❌ 서류 생성 API 오류: {str(e)}")
             import traceback
@@ -5414,7 +5414,7 @@ def extract_pdf_data(filepath):
                 except AttributeError:
                     # get_tables 메서드가 없는 경우
                     print("⚠️ 테이블 추출 기능을 사용할 수 없습니다")
-                except Exception as e:
+    except Exception as e:
                     print(f"⚠️ 테이블 추출 실패: {e}")
                 
                 # 이미지 추출 (PyMuPDF 버전에 따라 다를 수 있음)
@@ -5525,7 +5525,7 @@ def extract_word_data(filepath):
                 'table_index': table_idx,
                 'data': table_data
             })
-            
+        
     except Exception as e:
         print(f"❌ 워드 추출 오류: {str(e)}")
         data['error'] = str(e)
