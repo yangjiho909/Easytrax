@@ -430,20 +430,33 @@ except ImportError as e:
 
 app.secret_key = os.environ.get('SECRET_KEY', 'kati_mvp_secret_key_2024')
 
-# 업로드 폴더 설정 (Heroku 호환)
+# 배포 환경 파일 관리자 초기화
+from deployment_file_fix import DeploymentFileManager
+file_manager = DeploymentFileManager()
+
+# 업로드 폴더 설정 (배포 환경 대응)
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploaded_documents')
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+if not file_manager.is_cloud:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # 클라우드 환경 감지
 IS_HEROKU = os.environ.get('IS_HEROKU', False)
 IS_RAILWAY = os.environ.get('IS_RAILWAY', False)
-IS_CLOUD = IS_HEROKU or IS_RAILWAY
+IS_RENDER = os.environ.get('RENDER') is not None
+IS_CLOUD = IS_HEROKU or IS_RAILWAY or IS_RENDER
 
-# 모든 환경에서 기능 활성화 (로컬과 동일하게)
-print("🚀 모든 기능 활성화: 로컬과 동일한 환경")
-MODEL_LOADING_ENABLED = True
-FILE_UPLOAD_ENABLED = True
-REALTIME_CRAWLING_ENABLED = True
+# 환경별 기능 설정
+print(f"🌐 배포 환경 감지: 클라우드={IS_CLOUD}, Render={IS_RENDER}")
+if IS_CLOUD:
+    print("⚠️ 클라우드 환경: 파일 시스템이 임시적일 수 있습니다")
+    MODEL_LOADING_ENABLED = True
+    FILE_UPLOAD_ENABLED = True
+    REALTIME_CRAWLING_ENABLED = False  # 메모리 절약
+else:
+    print("🏠 로컬 환경: 모든 기능 활성화")
+    MODEL_LOADING_ENABLED = True
+    FILE_UPLOAD_ENABLED = True
+    REALTIME_CRAWLING_ENABLED = True
 
 # 🚀 최적화 시스템 초기화
 print("🔧 최적화 시스템 초기화 중...")
@@ -3652,6 +3665,109 @@ def health_check():
         'service': 'KATI Compliance Analysis API'
     })
 
+@app.route('/api/test-fonts')
+def test_fonts():
+    """폰트 로드 상태 테스트"""
+    import os
+    from PIL import ImageFont
+    
+    font_status = {}
+    test_paths = [
+        # 오픈소스 폰트 (배포 환경)
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.otf",
+        # 프로젝트 폰트
+        "fonts/msyh.ttc",
+        "fonts/simsun.ttc",
+        "fonts/simhei.ttf",
+        # 시스템 폰트
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    
+    for path in test_paths:
+        font_status[path] = {
+            'exists': os.path.exists(path),
+            'readable': os.access(path, os.R_OK) if os.path.exists(path) else False,
+            'loadable': False
+        }
+        
+        if font_status[path]['exists'] and font_status[path]['readable']:
+            try:
+                font = ImageFont.truetype(path, 20)
+                font_status[path]['loadable'] = True
+                font_status[path]['font_name'] = getattr(font, 'name', 'Unknown')
+            except Exception as e:
+                font_status[path]['loadable'] = False
+                font_status[path]['error'] = str(e)
+    
+    return jsonify({
+        'font_status': font_status,
+        'environment': 'production' if IS_CLOUD else 'development',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/api/test-chinese-rendering')
+def test_chinese_rendering():
+    """중국어 렌더링 테스트"""
+    from PIL import Image, ImageDraw, ImageFont
+    import os
+    
+    test_text = "营养标签 营养成分表 过敏原信息"
+    
+    # 폰트 로드 시도
+    font = None
+    font_paths = [
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.otf",
+        "fonts/msyh.ttc",
+        "fonts/simsun.ttc",
+    ]
+    
+    for font_path in font_paths:
+        try:
+            if os.path.exists(font_path):
+                font = ImageFont.truetype(font_path, 20)
+                print(f"✅ 폰트 로드 성공: {font_path}")
+                break
+        except Exception as e:
+            print(f"❌ 폰트 로드 실패: {font_path} - {e}")
+    
+    if font is None:
+        try:
+            font = ImageFont.load_default()
+            print("⚠️ 기본 폰트 사용")
+        except Exception as e:
+            return jsonify({
+                'success': False, 
+                'error': f'폰트 로드 완전 실패: {str(e)}',
+                'available_fonts': font_paths
+            })
+    
+    # 이미지 생성 테스트
+    try:
+        image = Image.new('RGB', (400, 100), (255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        # 텍스트 그리기
+        draw.text((10, 10), test_text, fill=(0, 0, 0), font=font)
+        
+        # 이미지 저장
+        image_path = "test_chinese_rendering.png"
+        image.save(image_path)
+        
+        return jsonify({
+            'success': True, 
+            'image_path': image_path,
+            'font_used': font_path if 'font_path' in locals() else 'default',
+            'test_text': test_text
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'error': f'이미지 생성 실패: {str(e)}',
+            'font_used': font_path if 'font_path' in locals() else 'default'
+        })
+
 @app.route('/api/test-document-generation', methods=['POST'])
 def test_document_generation():
     """테스트용 문서 생성 API"""
@@ -5256,16 +5372,19 @@ def create_simple_test_label(country, product_info):
         font = None
         font_size = 20
         
-        # 국가별 폰트 경로 (우선순위 순)
+        # 국가별 폰트 경로 (우선순위 순) - 개선된 버전
         if country == "중국":
             font_paths = [
-                # 프로젝트 내 폰트 폴더 (배포 환경용, 최우선)
+                # 오픈소스 폰트 (배포 환경 우선)
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto CJK
+                "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.otf",   # Linux Noto Sans SC
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-SC-Regular.otf", # Linux Noto Sans CJK SC
+                # 프로젝트 내 폰트 폴더
                 "fonts/msyh.ttc",                    # Microsoft YaHei (중국어, 영어, 한글)
                 "fonts/simsun.ttc",                  # SimSun (중국어, 영어)
                 "fonts/simhei.ttf",                  # SimHei (중국어)
                 "fonts/malgun.ttf",                  # 맑은 고딕 (한글)
                 # Linux 시스템 폰트 (배포 환경용)
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto CJK
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",         # Linux DejaVu
                 "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Linux Liberation
                 # macOS 시스템 폰트
@@ -5619,60 +5738,56 @@ def download_label(filename):
 
 @app.route('/generated_documents/<filename>')
 def serve_document(filename):
-    """생성된 서류 파일 서빙"""
+    """생성된 서류 파일 서빙 (배포 환경 대응)"""
     try:
-        # 디렉토리 생성 확인
-        os.makedirs('generated_documents', exist_ok=True)
+        from deployment_file_fix import serve_deployment_file
         
-        file_path = os.path.join('generated_documents', filename)
+        # 배포 환경 파일 서빙
+        file_content, mime_type, headers = serve_deployment_file(filename, as_attachment=True)
         
-        # 파일 존재 확인
-        if not os.path.exists(file_path):
-            print(f"❌ 파일 없음: {file_path}")
-            return jsonify({'error': f'파일을 찾을 수 없습니다: {filename}'}), 404
+        print(f"✅ 파일 서빙 성공: {filename} ({len(file_content)} bytes)")
         
-        print(f"✅ 파일 서빙: {file_path} ({os.path.getsize(file_path)} bytes)")
+        # Flask Response 객체 생성
+        from flask import Response
+        response = Response(file_content, mimetype=mime_type)
         
-        # PDF 파일인 경우 다운로드 헤더 설정
-        if filename.lower().endswith('.pdf'):
-            return send_from_directory(
-                'generated_documents', 
-                filename,
-                as_attachment=True,
-                download_name=filename,
-                mimetype='application/pdf'
-            )
-        else:
-            return send_from_directory('generated_documents', filename)
+        # 헤더 설정
+        for key, value in headers.items():
+            response.headers[key] = value
+        
+        return response
             
+    except FileNotFoundError as e:
+        print(f"❌ 파일 없음: {filename}")
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         print(f"❌ 파일 서빙 오류: {str(e)}")
         return jsonify({'error': f'파일을 찾을 수 없습니다: {str(e)}'}), 404
 
 @app.route('/api/download-document/<filename>')
 def download_document(filename):
-    """문서 다운로드 API"""
+    """문서 다운로드 API (배포 환경 대응)"""
     try:
-        # 디렉토리 생성 확인
-        os.makedirs('generated_documents', exist_ok=True)
+        from deployment_file_fix import serve_deployment_file
         
-        file_path = os.path.join('generated_documents', filename)
+        # 배포 환경 파일 서빙
+        file_content, mime_type, headers = serve_deployment_file(filename, as_attachment=True)
         
-        # 파일 존재 확인
-        if not os.path.exists(file_path):
-            return jsonify({'error': f'파일을 찾을 수 없습니다: {filename}'}), 404
+        print(f"✅ 다운로드 성공: {filename} ({len(file_content)} bytes)")
         
-        print(f"✅ 다운로드 요청: {file_path} ({os.path.getsize(file_path)} bytes)")
+        # Flask Response 객체 생성
+        from flask import Response
+        response = Response(file_content, mimetype=mime_type)
         
-        # 파일 다운로드
-        return send_from_directory(
-            'generated_documents', 
-            filename,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/pdf'
-        )
+        # 헤더 설정
+        for key, value in headers.items():
+            response.headers[key] = value
         
+        return response
+        
+    except FileNotFoundError as e:
+        print(f"❌ 파일 없음: {filename}")
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         print(f"❌ 다운로드 오류: {str(e)}")
         return jsonify({'error': f'다운로드 중 오류가 발생했습니다: {str(e)}'}), 500
@@ -7947,53 +8062,8 @@ def process_simple_natural_language_query(query):
 
 구체적인 품목을 알려주시면 더 상세한 정보를 제공해드릴 수 있습니다."""
         
-        # 샘플 전략 보고서 데이터
-        sample_strategy_reports = [
-            {
-                "report_id": "sample_001",
-                "country": "중국",
-                "product": "라면",
-                "title": "중국 라면 시장 진출 전략 보고서",
-                "executive_summary": "중국 라면 시장 진출을 위한 종합 전략 분석",
-                "key_issues_count": 3,
-                "market_trends_count": 2,
-                "customs_documents_count": 4,
-                "response_strategies_count": 2,
-                "risk_keywords": "규제,경쟁,환율",
-                "market_size": "대규모",
-                "growth_rate": "높음",
-                "regulatory_complexity": "복잡",
-                "risk_assessment": "중간 수준의 리스크",
-                "source": "MARKET_ENTRY_PARSER",
-                "report_date": "2025-01-15"
-            }
-        ]
-        
-        # 데이터 삽입
-        for reg in sample_regulations:
-            mvp_system.integrated_db.insert_regulation_data(reg)
-        
-        for stat in sample_trade_stats:
-            mvp_system.integrated_db.insert_trade_statistics(stat)
-        
-        for analysis in sample_market_analysis:
-            mvp_system.integrated_db.insert_market_analysis(analysis)
-        
-        for report in sample_strategy_reports:
-            mvp_system.integrated_db.insert_strategy_report(report)
-        
-        return jsonify({
-            "success": True,
-            "message": "샘플 데이터 로드 완료",
-            "data": {
-                "regulations_loaded": len(sample_regulations),
-                "trade_statistics_loaded": len(sample_trade_stats),
-                "market_analysis_loaded": len(sample_market_analysis),
-                "strategy_reports_loaded": len(sample_strategy_reports)
-            }
-        })
-        
-    except Exception as e:
+        # 기본 응답
+        return "중국 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
         return jsonify({
             "success": False,
             "message": f"샘플 데이터 로드 중 오류: {str(e)}"

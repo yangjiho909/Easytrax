@@ -3,7 +3,13 @@ services:
     name: kati-export-helper
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      # 폰트 설치 (중국어 지원)
+      sudo apt-get update
+      sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+      sudo fc-cache -fv
+      # Python 패키지 설치
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
@@ -12,5 +18,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: RENDER
+        value: true
+
     healthCheckPath: /
     autoDeploy: true 

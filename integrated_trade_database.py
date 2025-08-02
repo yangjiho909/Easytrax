@@ -71,6 +71,7 @@ class IntegratedTradeDatabase:
         self.reliability_scores = {
             "KOTRA_API": 0.95,
             "KOTRA_BIGDATA": 0.90,
+            "KOTRA_EXCEL_DATA": 0.88,  # KOTRA 엑셀 데이터 추가
             "PUBLIC_DATA_PORTAL": 0.85,
             "REAL_TIME_CRAWLER": 0.80,
             "MVP_DATA": 0.70,
@@ -144,6 +145,42 @@ class IntegratedTradeDatabase:
                         market_share REAL,
                         source TEXT NOT NULL,
                         data_date TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # KOTRA 엑셀 데이터 테이블 (글로벌 무역현황)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS kotra_global_trade (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        country TEXT NOT NULL,
+                        hs_code TEXT,
+                        product_name TEXT,
+                        export_amount REAL,
+                        import_amount REAL,
+                        trade_balance REAL,
+                        growth_rate REAL,
+                        market_share REAL,
+                        period TEXT,
+                        source TEXT DEFAULT 'KOTRA_EXCEL_DATA',
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # KOTRA 엑셀 데이터 테이블 (해외유망시장추천)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS kotra_market_recommendation (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        country TEXT NOT NULL,
+                        hs_code TEXT,
+                        product_name TEXT,
+                        recommendation_score REAL,
+                        market_potential REAL,
+                        growth_potential REAL,
+                        risk_level TEXT,
+                        recommendation_reason TEXT,
+                        period TEXT,
+                        source TEXT DEFAULT 'KOTRA_EXCEL_DATA',
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -338,6 +375,96 @@ class IntegratedTradeDatabase:
         except Exception as e:
             logger.error(f"❌ 전략 보고서 데이터 삽입 실패: {e}")
 
+    def insert_kotra_excel_data(self, excel_data: Dict[str, Any]):
+        """KOTRA 엑셀 데이터 삽입"""
+        try:
+            source = excel_data.get('source', 'KOTRA_EXCEL_DATA')
+            
+            if source == "글로벌 무역현황":
+                self._insert_kotra_global_trade_data(excel_data)
+            elif source == "해외유망시장추천":
+                self._insert_kotra_market_recommendation_data(excel_data)
+            else:
+                logger.warning(f"⚠️ 알 수 없는 KOTRA 엑셀 데이터 소스: {source}")
+                
+        except Exception as e:
+            logger.error(f"❌ KOTRA 엑셀 데이터 삽입 실패: {e}")
+            raise
+    
+    def _insert_kotra_global_trade_data(self, excel_data: Dict[str, Any]):
+        """글로벌 무역현황 데이터 삽입"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                data_list = excel_data.get('data', [])
+                inserted_count = 0
+                
+                for item in data_list:
+                    cursor.execute('''
+                        INSERT INTO kotra_global_trade (
+                            country, hs_code, product_name, export_amount,
+                            import_amount, trade_balance, growth_rate,
+                            market_share, period, source
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        item.get('country'),
+                        item.get('hs_code'),
+                        item.get('product_name'),
+                        item.get('export_amount', 0.0),
+                        item.get('import_amount', 0.0),
+                        item.get('trade_balance', 0.0),
+                        item.get('growth_rate', 0.0),
+                        item.get('market_share', 0.0),
+                        item.get('period'),
+                        'KOTRA_EXCEL_DATA'
+                    ))
+                    inserted_count += 1
+                
+                conn.commit()
+                logger.info(f"✅ 글로벌 무역현황 데이터 삽입 완료: {inserted_count}개 레코드")
+                
+        except Exception as e:
+            logger.error(f"❌ 글로벌 무역현황 데이터 삽입 실패: {e}")
+            raise
+    
+    def _insert_kotra_market_recommendation_data(self, excel_data: Dict[str, Any]):
+        """해외유망시장추천 데이터 삽입"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                data_list = excel_data.get('data', [])
+                inserted_count = 0
+                
+                for item in data_list:
+                    cursor.execute('''
+                        INSERT INTO kotra_market_recommendation (
+                            country, hs_code, product_name, recommendation_score,
+                            market_potential, growth_potential, risk_level,
+                            recommendation_reason, period, source
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        item.get('country'),
+                        item.get('hs_code'),
+                        item.get('product_name'),
+                        item.get('recommendation_score', 0.0),
+                        item.get('market_potential', 0.0),
+                        item.get('growth_potential', 0.0),
+                        item.get('risk_level'),
+                        item.get('recommendation_reason'),
+                        item.get('period'),
+                        'KOTRA_EXCEL_DATA'
+                    ))
+                    inserted_count += 1
+                
+                conn.commit()
+                logger.info(f"✅ 해외유망시장추천 데이터 삽입 완료: {inserted_count}개 레코드")
+                
+        except Exception as e:
+            logger.error(f"❌ 해외유망시장추천 데이터 삽입 실패: {e}")
+            raise
+
     def natural_language_query(self, query: str) -> QueryResult:
         """자연어 질의 처리 (AI 강화)"""
         start_time = datetime.now()
@@ -472,7 +599,9 @@ class IntegratedTradeDatabase:
             "regulations": [],
             "trade_statistics": [],
             "market_analysis": [],
-            "strategy_reports": []
+            "strategy_reports": [],
+            "kotra_global_trade": [],
+            "kotra_market_recommendation": []
         }
         
         try:
@@ -528,6 +657,32 @@ class IntegratedTradeDatabase:
                     cursor.execute(strategy_query, (country, country, product, product))
                     results["strategy_reports"] = cursor.fetchall()
                 
+                # KOTRA 글로벌 무역현황 검색
+                if query_type in ["trade_statistics", "general"]:
+                    kotra_global_query = '''
+                        SELECT * FROM kotra_global_trade 
+                        WHERE (country = ? OR ? IS NULL)
+                        AND (hs_code = ? OR ? IS NULL)
+                        AND (product_name = ? OR ? IS NULL)
+                        ORDER BY created_at DESC
+                        LIMIT 10
+                    '''
+                    cursor.execute(kotra_global_query, (country, country, hs_code, hs_code, product, product))
+                    results["kotra_global_trade"] = cursor.fetchall()
+                
+                # KOTRA 해외유망시장추천 검색
+                if query_type in ["market_analysis", "general"]:
+                    kotra_recommendation_query = '''
+                        SELECT * FROM kotra_market_recommendation 
+                        WHERE (country = ? OR ? IS NULL)
+                        AND (hs_code = ? OR ? IS NULL)
+                        AND (product_name = ? OR ? IS NULL)
+                        ORDER BY recommendation_score DESC, created_at DESC
+                        LIMIT 10
+                    '''
+                    cursor.execute(kotra_recommendation_query, (country, country, hs_code, hs_code, product, product))
+                    results["kotra_market_recommendation"] = cursor.fetchall()
+                
         except Exception as e:
             logger.error(f"❌ 데이터 검색 실패: {e}")
         
@@ -542,6 +697,8 @@ class IntegratedTradeDatabase:
         seen_statistics = set()
         seen_analysis = set()
         seen_reports = set()
+        seen_kotra_global = set()
+        seen_kotra_recommendation = set()
         
         # 규제 정보 답변
         if results["regulations"]:
@@ -590,6 +747,32 @@ class IntegratedTradeDatabase:
                     answer_parts.append(f"  - 리스크: {report[9]}")
                     answer_parts.append(f"  - 출처: {report[14]}")
         
+        # KOTRA 글로벌 무역현황 답변
+        if results["kotra_global_trade"]:
+            answer_parts.append("\n🌍 **KOTRA 글로벌 무역현황**")
+            for trade in results["kotra_global_trade"][:3]:
+                trade_key = f"{trade[1]}_{trade[2]}_{trade[3]}"  # country_hs_code_product_name
+                if trade_key not in seen_kotra_global:
+                    seen_kotra_global.add(trade_key)
+                    answer_parts.append(f"• **{trade[1]} {trade[3]}** (HS: {trade[2]}):")
+                    answer_parts.append(f"  - 수출: {trade[4]:,.0f}, 수입: {trade[5]:,.0f}")
+                    answer_parts.append(f"  - 무역수지: {trade[6]:,.0f}, 성장률: {trade[7]:.1f}%")
+                    answer_parts.append(f"  - 시장점유율: {trade[8]:.1f}%")
+                    answer_parts.append(f"  - 출처: {trade[10]}")
+        
+        # KOTRA 해외유망시장추천 답변
+        if results["kotra_market_recommendation"]:
+            answer_parts.append("\n⭐ **KOTRA 해외유망시장추천**")
+            for rec in results["kotra_market_recommendation"][:3]:
+                rec_key = f"{rec[1]}_{rec[2]}_{rec[3]}"  # country_hs_code_product_name
+                if rec_key not in seen_kotra_recommendation:
+                    seen_kotra_recommendation.add(rec_key)
+                    answer_parts.append(f"• **{rec[1]} {rec[3]}** (HS: {rec[2]}):")
+                    answer_parts.append(f"  - 추천점수: {rec[4]:.1f}, 시장잠재력: {rec[5]:.1f}")
+                    answer_parts.append(f"  - 성장잠재력: {rec[6]:.1f}, 리스크: {rec[7]}")
+                    answer_parts.append(f"  - 추천이유: {rec[8]}")
+                    answer_parts.append(f"  - 출처: {rec[10]}")
+        
         if not answer_parts:
             return "해당 정보를 찾을 수 없습니다. 다른 키워드로 검색해 보세요."
         
@@ -610,6 +793,13 @@ class IntegratedTradeDatabase:
         
         for report in results["strategy_reports"]:
             sources.add(report[14])  # source column
+        
+        # KOTRA 엑셀 데이터 소스 추가
+        for trade in results["kotra_global_trade"]:
+            sources.add(trade[10])  # source column
+        
+        for rec in results["kotra_market_recommendation"]:
+            sources.add(rec[10])  # source column
         
         return list(sources)
 
@@ -717,7 +907,7 @@ class IntegratedTradeDatabase:
                 cursor = conn.cursor()
                 
                 # 각 테이블의 레코드 수 확인
-                tables = ["regulations", "trade_statistics", "market_analysis", "strategy_reports", "query_logs"]
+                tables = ["regulations", "trade_statistics", "market_analysis", "strategy_reports", "kotra_global_trade", "kotra_market_recommendation", "query_logs"]
                 record_counts = {}
                 
                 for table in tables:
@@ -735,6 +925,13 @@ class IntegratedTradeDatabase:
                     "status": "active",
                     "database_path": self.db_path,
                     "record_counts": record_counts,
+                    "regulations_count": record_counts.get("regulations", 0),
+                    "trade_statistics_count": record_counts.get("trade_statistics", 0),
+                    "market_analysis_count": record_counts.get("market_analysis", 0),
+                    "strategy_reports_count": record_counts.get("strategy_reports", 0),
+                    "kotra_global_trade_count": record_counts.get("kotra_global_trade", 0),
+                    "kotra_market_recommendation_count": record_counts.get("kotra_market_recommendation", 0),
+                    "query_logs_count": record_counts.get("query_logs", 0),
                     "last_regulation_update": last_regulation_update,
                     "last_trade_update": last_trade_update,
                     "reliability_scores": self.reliability_scores,

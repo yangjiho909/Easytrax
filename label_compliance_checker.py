@@ -303,7 +303,7 @@ class LabelComplianceChecker:
         }
     
     def _check_required_fields(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """필수 필드 검증 (30점 만점)"""
+        """필수 필드 검증 (30점 만점) - 개선된 품질 기반 점수 계산"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -316,15 +316,33 @@ class LabelComplianceChecker:
                 errors.append(f"필수 표기사항 누락: {statement}")
                 score_deduction += max_deduction_per_field
             else:
-                # 필드 길이 검증
+                # 필드 품질 검증 - 입력 데이터의 품질에 따라 점수 차감
                 field_value = self._get_field_value(label_info, statement)
                 if field_value:
+                    # 길이 기반 품질 평가
                     if len(field_value) < 2:
                         warnings.append(f"표기사항이 너무 짧음: {statement}")
-                        score_deduction += 2
+                        score_deduction += max_deduction_per_field * 0.3  # 30% 차감
+                    elif len(field_value) < 5:
+                        warnings.append(f"표기사항이 부족함: {statement}")
+                        score_deduction += max_deduction_per_field * 0.1  # 10% 차감
                     elif len(field_value) > 500:
                         warnings.append(f"표기사항이 너무 김: {statement}")
-                        score_deduction += 2
+                        score_deduction += max_deduction_per_field * 0.2  # 20% 차감
+                    
+                    # 특수 문자 및 품질 검증
+                    special_chars = ['※', '★', '♥', '*', '!', '?']
+                    special_char_count = sum(1 for char in special_chars if char in field_value)
+                    if special_char_count > 0:
+                        warnings.append(f"부적절한 특수문자 사용: {statement}")
+                        score_deduction += max_deduction_per_field * 0.1 * special_char_count
+                    
+                    # 숫자와 문자의 균형 검증 (제품명, 제조사 등)
+                    if statement in ["제품명", "Product Name", "제조사", "Manufacturer"]:
+                        digit_ratio = sum(1 for c in field_value if c.isdigit()) / len(field_value)
+                        if digit_ratio > 0.5:
+                            warnings.append(f"숫자가 과도하게 많음: {statement}")
+                            score_deduction += max_deduction_per_field * 0.2
         
         # 최대 30점까지만 차감
         return errors, warnings, min(score_deduction, 30)
@@ -386,7 +404,7 @@ class LabelComplianceChecker:
         return errors, warnings, min(score_deduction, 10)
     
     def _check_nutrition_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
-        """영양성분 요구사항 검증 (20점 만점)"""
+        """영양성분 요구사항 검증 (20점 만점) - 개선된 품질 기반 점수 계산"""
         errors = []
         warnings = []
         score_deduction = 0
@@ -400,24 +418,120 @@ class LabelComplianceChecker:
             if not self._has_nutrition_component(nutrition_info, component):
                 errors.append(f"필수 영양성분 누락: {component}")
                 score_deduction += max_deduction_per_component
+            else:
+                # 영양성분 값 품질 검증
+                component_value = self._get_nutrition_component_value(nutrition_info, component)
+                if component_value:
+                    try:
+                        # 숫자 값 추출
+                        numeric_value = float(re.findall(r'\d+(?:\.\d+)?', str(component_value))[0])
+                        
+                        # 값의 적절성 검증
+                        if numeric_value < 0:
+                            errors.append(f"영양성분 값이 음수: {component}")
+                            score_deduction += max_deduction_per_component * 0.5
+                        elif numeric_value == 0:
+                            warnings.append(f"영양성분 값이 0: {component}")
+                            score_deduction += max_deduction_per_component * 0.2
+                        elif numeric_value > 10000:
+                            warnings.append(f"영양성분 값이 비정상적으로 큼: {component}")
+                            score_deduction += max_deduction_per_component * 0.3
+                        
+                        # 단위 검증
+                        if not self._has_valid_nutrition_unit(component_value, component):
+                            warnings.append(f"영양성분 단위 부적절: {component}")
+                            score_deduction += max_deduction_per_component * 0.2
+                        
+                        # 영양성분별 합리적 범위 검증
+                        if not self._is_nutrition_value_reasonable(component, numeric_value):
+                            warnings.append(f"영양성분 값이 비합리적: {component} ({numeric_value})")
+                            score_deduction += max_deduction_per_component * 0.2
+                            
+                    except (ValueError, IndexError):
+                        warnings.append(f"영양성분 값 형식 오류: {component}")
+                        score_deduction += max_deduction_per_component * 0.3
         
-        # 영양성분 값 검증
-        for nutrient, value in nutrition_info.items():
-            if value:
-                try:
-                    numeric_value = float(re.findall(r'\d+(?:\.\d+)?', str(value))[0])
-                    if numeric_value < 0:
-                        errors.append(f"영양성분 값이 음수: {nutrient}")
-                        score_deduction += 5
-                    elif numeric_value > 10000:
-                        warnings.append(f"영양성분 값이 비정상적으로 큼: {nutrient}")
-                        score_deduction += 2
-                except (ValueError, IndexError):
-                    warnings.append(f"영양성분 값 형식 오류: {nutrient}")
-                    score_deduction += 2
+        # 영양성분 정보 완성도 검증
+        total_nutrition_fields = len(nutrition_info)
+        if total_nutrition_fields < len(required_components):
+            completion_ratio = total_nutrition_fields / len(required_components)
+            if completion_ratio < 0.5:
+                warnings.append("영양성분 정보가 부족함")
+                score_deduction += 5
+            elif completion_ratio < 0.8:
+                warnings.append("영양성분 정보가 부분적으로 부족함")
+                score_deduction += 2
         
         # 최대 20점까지만 차감
         return errors, warnings, min(score_deduction, 20)
+    
+    def _get_nutrition_component_value(self, nutrition_info: Dict, component: str) -> Optional[str]:
+        """영양성분 값 가져오기"""
+        component_mapping = {
+            "열량": ["calories", "energy", "열량"],
+            "단백질": ["protein", "단백질"],
+            "지방": ["fat", "지방"],
+            "탄수화물": ["carbohydrates", "carbs", "탄수화물"],
+            "나트륨": ["sodium", "나트륨"],
+            "당류": ["sugar", "당류"],
+            "Calories": ["calories", "energy"],
+            "Protein": ["protein"],
+            "Fat": ["fat"],
+            "Carbohydrate": ["carbohydrates", "carbs"],
+            "Sodium": ["sodium"],
+            "Sugar": ["sugar"]
+        }
+        
+        possible_names = component_mapping.get(component, [component.lower()])
+        for name in possible_names:
+            if name in nutrition_info:
+                return str(nutrition_info[name])
+        
+        return None
+    
+    def _has_valid_nutrition_unit(self, value: str, component: str) -> bool:
+        """영양성분 단위 검증"""
+        if not value:
+            return False
+        
+        # 영양성분별 적절한 단위
+        valid_units = {
+            "열량": ["kcal", "cal", "kJ"],
+            "단백질": ["g", "gram"],
+            "지방": ["g", "gram"],
+            "탄수화물": ["g", "gram"],
+            "나트륨": ["mg", "g"],
+            "당류": ["g", "gram"],
+            "Calories": ["kcal", "cal", "kJ"],
+            "Protein": ["g", "gram"],
+            "Fat": ["g", "gram"],
+            "Carbohydrate": ["g", "gram"],
+            "Sodium": ["mg", "g"],
+            "Sugar": ["g", "gram"]
+        }
+        
+        component_units = valid_units.get(component, ["g", "mg", "kcal"])
+        return any(unit in value.lower() for unit in component_units)
+    
+    def _is_nutrition_value_reasonable(self, component: str, value: float) -> bool:
+        """영양성분 값의 합리성 검증"""
+        reasonable_ranges = {
+            "열량": (0, 1000),  # kcal
+            "단백질": (0, 100),   # g
+            "지방": (0, 100),     # g
+            "탄수화물": (0, 200),  # g
+            "나트륨": (0, 5000),  # mg
+            "당류": (0, 100),     # g
+            "Calories": (0, 1000),
+            "Protein": (0, 100),
+            "Fat": (0, 100),
+            "Carbohydrate": (0, 200),
+            "Sodium": (0, 5000),
+            "Sugar": (0, 100)
+        }
+        
+        min_val, max_val = reasonable_ranges.get(component, (0, 1000))
+        return min_val <= value <= max_val
     
     def _check_allergy_requirements(self, label_info: Dict, regulation: Dict) -> Tuple[List, List, int]:
         """알레르기 정보 요구사항 검증 (15점 만점)"""

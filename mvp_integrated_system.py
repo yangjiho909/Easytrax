@@ -405,7 +405,7 @@ class MVPSystem:
         self._display_compliance_result(analysis_result)
     
     def _analyze_compliance(self, country, product, company_info, product_info, prepared_documents, labeling_info):
-        """규제 준수성 분석"""
+        """규제 준수성 분석 - 개선된 점수 계산"""
         analysis = {
             "country": country,
             "product": product,
@@ -414,7 +414,8 @@ class MVPSystem:
             "missing_requirements": [],
             "improvement_suggestions": [],
             "critical_issues": [],
-            "minor_issues": []
+            "minor_issues": [],
+            "score_details": {}  # 점수 세부 내역 추가
         }
         
         # 국가별 규제 정보 가져오기
@@ -438,7 +439,12 @@ class MVPSystem:
             analysis["critical_issues"].append("규제 정보를 찾을 수 없습니다.")
             return analysis
         
-        # 1. 필수 서류 검사
+        # 점수 계산 초기화
+        total_score = 0
+        max_possible_score = 0
+        score_details = {}
+        
+        # 1. 필수 서류 검사 (30점)
         required_documents = regulations.get("필요서류", [])
         missing_docs = []
         for doc in required_documents:
@@ -449,68 +455,148 @@ class MVPSystem:
             analysis["missing_requirements"].extend(missing_docs)
             analysis["critical_issues"].append(f"필수 서류 부족: {', '.join(missing_docs)}")
         
-        # 2. 라벨링 요구사항 검사
+        # 서류 점수 계산: 준비된 서류 비율에 따라 점수 부여
+        docs_score = max(0, (len(required_documents) - len(missing_docs)) / len(required_documents) * 30) if required_documents else 30
+        total_score += docs_score
+        max_possible_score += 30
+        score_details["서류_준비도"] = f"{docs_score:.1f}/30점"
+        
+        # 2. 회사 정보 품질 검사 (15점)
+        company_score = 0
+        company_fields = ["company_name", "address", "phone", "email", "representative"]
+        for field in company_fields:
+            if field in company_info and company_info[field] and len(str(company_info[field]).strip()) > 0:
+                company_score += 3  # 각 필드당 3점
+        
+        total_score += company_score
+        max_possible_score += 15
+        score_details["회사_정보"] = f"{company_score:.1f}/15점"
+        
+        # 3. 제품 정보 품질 검사 (20점)
+        product_score = 0
+        product_fields = ["product_name", "manufacturer", "origin", "expiry_date"]
+        for field in product_fields:
+            if field in product_info and product_info[field] and len(str(product_info[field]).strip()) > 0:
+                product_score += 5  # 각 필드당 5점
+        
+        # 영양성분 정보 품질 검사
+        nutrition_score = 0
+        if "nutrition" in product_info:
+            nutrition = product_info["nutrition"]
+            nutrition_fields = ["열량", "단백질", "지방", "탄수화물", "나트륨", "당류"]
+            for field in nutrition_fields:
+                if field in nutrition and nutrition[field] and len(str(nutrition[field]).strip()) > 0:
+                    nutrition_score += 1.67  # 6개 필드 = 10점
+        
+        product_score += nutrition_score
+        total_score += product_score
+        max_possible_score += 20
+        score_details["제품_정보"] = f"{product_score:.1f}/20점"
+        
+        # 4. 라벨링 요구사항 검사 (25점)
+        labeling_score = 0
+        labeling_checks = 0
+        
         if country == "중국":
             # 중국 라벨링 규정 (GB 7718-2025)
-            if not labeling_info["has_nutrition_label"]:
-                analysis["critical_issues"].append("중국 GB 7718-2025: 영양성분표 필수")
-            if not labeling_info["has_allergy_info"]:
-                analysis["critical_issues"].append("중국 GB 7718-2025: 8대 알레르기 정보 필수")
-            if not labeling_info["has_expiry_date"]:
-                analysis["critical_issues"].append("중국 GB 7718-2025: 유통기한 필수")
-            if not labeling_info["has_ingredients"]:
-                analysis["critical_issues"].append("중국 GB 7718-2025: 성분표 필수")
-            if not labeling_info["has_storage_info"]:
-                analysis["minor_issues"].append("중국 GB 7718-2025: 보관방법 권장")
-            if not labeling_info["has_manufacturer_info"]:
-                analysis["critical_issues"].append("중국 GB 7718-2025: 제조사 정보 필수")
-        
+            labeling_requirements = {
+                "has_nutrition_label": ("영양성분표", 5, "critical"),
+                "has_allergy_info": ("8대 알레르기 정보", 5, "critical"),
+                "has_expiry_date": ("유통기한", 5, "critical"),
+                "has_ingredients": ("성분표", 5, "critical"),
+                "has_storage_info": ("보관방법", 3, "minor"),
+                "has_manufacturer_info": ("제조사 정보", 2, "critical")
+            }
         elif country == "미국":
             # 미국 라벨링 규정 (FDA)
-            if not labeling_info["has_nutrition_label"]:
-                analysis["critical_issues"].append("미국 FDA: 영양성분표 필수")
-            if not labeling_info["has_allergy_info"]:
-                analysis["critical_issues"].append("미국 FDA: 9대 알레르기 정보 필수")
-            if not labeling_info["has_expiry_date"]:
-                analysis["minor_issues"].append("미국 FDA: 유통기한 권장")
-            if not labeling_info["has_ingredients"]:
-                analysis["critical_issues"].append("미국 FDA: 성분표 필수")
-            if not labeling_info["has_storage_info"]:
-                analysis["minor_issues"].append("미국 FDA: 보관방법 권장")
-            if not labeling_info["has_manufacturer_info"]:
-                analysis["critical_issues"].append("미국 FDA: 제조사 정보 필수")
+            labeling_requirements = {
+                "has_nutrition_label": ("영양성분표", 5, "critical"),
+                "has_allergy_info": ("9대 알레르기 정보", 5, "critical"),
+                "has_expiry_date": ("유통기한", 3, "minor"),
+                "has_ingredients": ("성분표", 5, "critical"),
+                "has_storage_info": ("보관방법", 3, "minor"),
+                "has_manufacturer_info": ("제조사 정보", 4, "critical")
+            }
         
-        # 3. 제한사항 검사
+        for field, (description, points, severity) in labeling_requirements.items():
+            if field in labeling_info and labeling_info[field]:
+                labeling_score += points
+                labeling_checks += 1
+            else:
+                if severity == "critical":
+                    analysis["critical_issues"].append(f"{country} 규정: {description} 필수")
+                else:
+                    analysis["minor_issues"].append(f"{country} 규정: {description} 권장")
+        
+        total_score += labeling_score
+        max_possible_score += 25
+        score_details["라벨링_준수도"] = f"{labeling_score:.1f}/25점"
+        
+        # 5. 제한사항 검사 (10점)
+        restriction_score = 10  # 기본 10점
         restrictions = regulations.get("제한사항", [])
         for restriction in restrictions:
-            if "나트륨" in restriction and "나트륨" in product_info["nutrition"]:
+            if "나트륨" in restriction and "나트륨" in product_info.get("nutrition", {}):
                 sodium_value = product_info["nutrition"]["나트륨"]
                 if "mg" in sodium_value:
                     try:
                         sodium_amount = int(sodium_value.replace("mg", "").strip())
                         if sodium_amount > 800:  # 예시 임계값
                             analysis["critical_issues"].append(f"나트륨 함량 초과: {sodium_amount}mg (권장: 800mg 이하)")
+                            restriction_score -= 5  # 나트륨 초과시 5점 차감
                     except:
                         pass
         
-        # 4. 점수 계산
-        total_checks = len(required_documents) + 6  # 서류 + 라벨링 체크
-        passed_checks = len(required_documents) - len(missing_docs)
+        total_score += restriction_score
+        max_possible_score += 10
+        score_details["제한사항_준수도"] = f"{restriction_score:.1f}/10점"
         
-        # 라벨링 체크
-        for key, value in labeling_info.items():
-            if value:
-                passed_checks += 1
+        # 6. 입력 데이터 품질 보너스 (최대 5점)
+        quality_bonus = 0
         
-        analysis["overall_score"] = (passed_checks / total_checks) * 100
+        # 성분 정보 품질
+        if "ingredients" in product_info and product_info["ingredients"]:
+            ingredient_count = len(product_info["ingredients"])
+            if ingredient_count >= 5:
+                quality_bonus += 2
+            elif ingredient_count >= 3:
+                quality_bonus += 1
+        
+        # 알레르기 정보 품질
+        if "allergy_ingredients" in product_info and product_info["allergy_ingredients"]:
+            allergy_count = len(product_info["allergy_ingredients"])
+            if allergy_count >= 2:
+                quality_bonus += 2
+            elif allergy_count >= 1:
+                quality_bonus += 1
+        
+        # 보관방법 정보 품질
+        if "storage_method" in product_info and product_info["storage_method"]:
+            storage_length = len(product_info["storage_method"])
+            if storage_length >= 20:
+                quality_bonus += 1
+        
+        total_score += quality_bonus
+        max_possible_score += 5
+        score_details["데이터_품질_보너스"] = f"{quality_bonus:.1f}/5점"
+        
+        # 최종 점수 계산 (100점 만점)
+        if max_possible_score > 0:
+            analysis["overall_score"] = (total_score / max_possible_score) * 100
+        else:
+            analysis["overall_score"] = 0
+        
+        analysis["score_details"] = score_details
         
         # 준수 상태 결정
         if analysis["overall_score"] >= 90:
             analysis["compliance_status"] = "준수"
         elif analysis["overall_score"] >= 70:
             analysis["compliance_status"] = "부분 준수"
+        elif analysis["overall_score"] >= 50:
+            analysis["compliance_status"] = "미준수 (개선 가능)"
         else:
-            analysis["compliance_status"] = "미준수"
+            analysis["compliance_status"] = "심각한 미준수"
         
         # 개선 제안 생성
         analysis["improvement_suggestions"] = self._generate_improvement_suggestions(analysis, country)
@@ -552,7 +638,7 @@ class MVPSystem:
         return suggestions
     
     def _display_compliance_result(self, analysis):
-        """준수성 분석 결과 표시"""
+        """준수성 분석 결과 표시 - 개선된 점수 세부 내역"""
         print("\n" + "="*60)
         print("🔍 규제 준수성 분석 결과")
         print("="*60)
@@ -564,6 +650,13 @@ class MVPSystem:
         # 준수 상태 표시
         status_icon = "✅" if analysis['compliance_status'] == "준수" else "⚠️" if analysis['compliance_status'] == "부분 준수" else "❌"
         print(f"📋 준수 상태: {status_icon} {analysis['compliance_status']}")
+        
+        # 점수 세부 내역 표시
+        if "score_details" in analysis and analysis["score_details"]:
+            print("\n📊 점수 세부 내역:")
+            print("-" * 40)
+            for category, score in analysis["score_details"].items():
+                print(f"   {category}: {score}")
         
         print("\n" + "-"*60)
         

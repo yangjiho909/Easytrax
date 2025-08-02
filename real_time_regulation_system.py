@@ -537,30 +537,51 @@ class RealTimeRegulationCrawler:
         try:
             # 가장 최근 업데이트 시간 찾기
             latest_update = None
+            latest_country = None
+            
+            # 캐시 디렉토리에서 실제 존재하는 파일들 검색
             for country in ["중국", "미국", "한국"]:
-                cache_key = self.get_cache_key(country, "라면")
-                cache_file = self.get_cache_file(cache_key)
+                # 패턴 매칭으로 해당 국가의 최신 캐시 파일 찾기
+                pattern = f"{country}_라면_*.json"
+                matching_files = list(self.cache_dir.glob(pattern))
                 
-                if cache_file.exists():
-                    file_time = datetime.fromtimestamp(cache_file.stat().st_mtime)
-                    if latest_update is None or file_time > latest_update:
-                        latest_update = file_time
+                if matching_files:
+                    # 가장 최근 파일 선택 (파일명의 날짜 기준)
+                    latest_file = max(matching_files, key=lambda x: x.stat().st_mtime)
+                    
+                    # 캐시 파일에서 실제 업데이트 시간 읽기
+                    try:
+                        with open(latest_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if '추가정보' in data and '최종업데이트' in data['추가정보']:
+                                update_time_str = data['추가정보']['최종업데이트']
+                                # "2025-07-31 07:02:50" 형식을 파싱
+                                update_time = datetime.strptime(update_time_str, "%Y-%m-%d %H:%M:%S")
+                                if latest_update is None or update_time > latest_update:
+                                    latest_update = update_time
+                                    latest_country = country
+                    except (json.JSONDecodeError, ValueError, KeyError):
+                        # JSON 파싱 실패 시 파일 수정 시간 사용
+                        file_time = datetime.fromtimestamp(latest_file.stat().st_mtime)
+                        if latest_update is None or file_time > latest_update:
+                            latest_update = file_time
+                            latest_country = country
             
             if latest_update:
                 # 파일이 24시간 이내에 수정된 경우에만 유효한 업데이트로 간주
                 file_age = datetime.now() - latest_update
                 if file_age.total_seconds() < (24 * 3600):  # 24시간
-                    return latest_update.strftime("%m-%d %H:%M")
+                    return f"{latest_update.strftime('%m-%d %H:%M')} ({latest_country})"
                 else:
-                    # 24시간이 지난 경우 현재 시간으로 표시
-                    return datetime.now().strftime("%m-%d %H:%M")
+                    # 24시간이 지난 경우에도 마지막 업데이트 정보 표시
+                    return f"{latest_update.strftime('%m-%d %H:%M')} ({latest_country})"
             else:
                 # 캐시 파일이 없는 경우 현재 시간으로 표시
-                return datetime.now().strftime("%m-%d %H:%M")
+                return f"{datetime.now().strftime('%m-%d %H:%M')} (신규)"
         except Exception as e:
             print(f"⚠️ get_last_update_time 오류: {e}")
             # 오류 발생 시 현재 시간으로 표시
-            return datetime.now().strftime("%m-%d %H:%M")
+            return f"{datetime.now().strftime('%m-%d %H:%M')} (오류)"
     
     def _get_fallback_china_data(self, product_type: str) -> Dict:
         """중국 규정 폴백 데이터"""
