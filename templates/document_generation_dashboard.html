@@ -72,6 +72,8 @@
             margin-left: 280px;
             padding: var(--spacing-lg);
             overflow-x: auto;
+            max-width: calc(100vw - 280px);
+            box-sizing: border-box;
         }
         
         .header {
@@ -88,6 +90,8 @@
             padding: var(--spacing-xl);
             margin-bottom: var(--spacing-lg);
             box-shadow: var(--shadow-md);
+            max-width: 100%;
+            overflow: hidden;
         }
         
         .form-label {
@@ -99,6 +103,67 @@
         .form-control {
             border: 2px solid #e9ecef;
             border-radius: var(--border-radius-md);
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+            width: 100%;
+        }
+        
+        .institution-section .alert {
+            margin-bottom: 0;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        
+        .institution-section .row {
+            margin: 0;
+            max-width: 100%;
+        }
+        
+        .institution-section .col-md-6 {
+            padding: 0 10px;
+            max-width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .institution-section a {
+            word-break: break-all;
+            max-width: 100%;
+            display: inline-block;
+        }
+        
+        .institution-section small {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: var(--spacing-md);
+                max-width: 100vw;
+            }
+            
+            .institution-section .col-md-6 {
+                padding: 0 5px;
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .institution-section .row {
+                flex-direction: column;
+            }
+        }
             padding: var(--spacing-md);
             transition: all 0.3s ease;
         }
@@ -401,7 +466,7 @@
                 <div id="chinaInstitutions" class="institution-section" style="display: none;">
                     <div class="alert alert-warning">
                         <h6 class="fw-bold mb-3">🇨🇳 중국 수출 절차 (기관 발급 서류)</h6>
-                        <div class="table-responsive">
+                        <div class="institution-content">
                             <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
