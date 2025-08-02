@@ -15,16 +15,6 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-class SimplePDFGenerator:
-    """간단한 PDF 생성기 클래스"""
-    
-    def __init__(self):
-        self.font_registered = False
-    
-    def generate_pdf(self, content: str, output_path: str, doc_name: str):
-        """PDF 생성 메서드"""
-        return generate_simple_pdf(content, output_path, doc_name)
-
 def generate_simple_pdf(content: str, output_path: str, doc_name: str):
     """간단한 PDF 생성"""
     try:
@@ -108,6 +98,99 @@ def _register_korean_font():
         print("⚠️ 한글 폰트를 찾을 수 없습니다. 기본 폰트 사용")
         
     except Exception as e:
+        print(f"❌ 폰트 등록 실패: {e}")
+
+class SimplePDFGenerator:
+    """간단한 PDF 생성기 클래스"""
+    
+    def __init__(self):
+        self.font_registered = False
+    
+    def generate_pdf(self, content: str, output_path: str, doc_name: str):
+        """PDF 생성 메서드"""
+        return generate_simple_pdf(content, output_path, doc_name)
+    
+    def generate_commercial_invoice(self, data: dict, output_path: str):
+        """상업송장 생성"""
+        content = self._format_commercial_invoice(data)
+        return self.generate_pdf(content, output_path, "상업송장")
+    
+    def generate_packing_list(self, data: dict, output_path: str):
+        """포장명세서 생성"""
+        content = self._format_packing_list(data)
+        return self.generate_pdf(content, output_path, "포장명세서")
+    
+    def _format_commercial_invoice(self, data: dict) -> str:
+        """상업송장 형식"""
+        content = f"""
+상업송장 (Commercial Invoice)
+
+제조사/수출자 (Manufacturer/Exporter):
+{data.get('manufacturer', 'N/A')}
+
+수입자 (Importer):
+{data.get('importer', 'N/A')}
+
+운송수단 (Means of Transport):
+{data.get('transport', 'N/A')}
+
+상품명 (Description of Goods):
+{data.get('product_name', 'N/A')}
+
+수량 (Quantity):
+{data.get('quantity', 'N/A')}
+
+단가 (Unit Price):
+{data.get('unit_price', 'N/A')}
+
+총액 (Total Amount):
+{data.get('total_amount', 'N/A')}
+
+원산지 (Country of Origin):
+{data.get('origin', 'N/A')}
+
+HS코드 (HS Code):
+{data.get('hs_code', 'N/A')}
+
+생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        """
+        return content.strip()
+    
+    def _format_packing_list(self, data: dict) -> str:
+        """포장명세서 형식"""
+        content = f"""
+포장명세서 (Packing List)
+
+제조사/수출자 (Manufacturer/Exporter):
+{data.get('manufacturer', 'N/A')}
+
+수입자 (Importer):
+{data.get('importer', 'N/A')}
+
+운송수단 (Means of Transport):
+{data.get('transport', 'N/A')}
+
+상품명 (Description of Goods):
+{data.get('product_name', 'N/A')}
+
+포장수량 (Number of Packages):
+{data.get('package_count', 'N/A')}
+
+총 중량 (Gross Weight):
+{data.get('gross_weight', 'N/A')}
+
+순 중량 (Net Weight):
+{data.get('net_weight', 'N/A')}
+
+부피 (Volume):
+{data.get('volume', 'N/A')}
+
+포장방법 (Packing Method):
+{data.get('packing_method', 'N/A')}
+
+생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        """
+        return content.strip()
         print(f"⚠️ 폰트 등록 실패: {e}")
 
 if __name__ == "__main__":

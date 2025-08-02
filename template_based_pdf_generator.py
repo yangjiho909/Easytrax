@@ -249,7 +249,11 @@ class TemplateBasedPDFGenerator:
     def _generate_fallback_pdf(self, doc_type: str, data: Dict, output_path: str) -> str:
         """폴백: 기본 PDF 생성"""
         try:
-            from simple_pdf_generator import SimplePDFGenerator
+            try:
+    from simple_pdf_generator import SimplePDFGenerator
+    simple_pdf_generator = SimplePDFGenerator()
+except ImportError:
+    simple_pdf_generator = None
             pdf_generator = SimplePDFGenerator()
             return pdf_generator.generate_pdf(doc_type, data, output_path)
         except Exception as e:

@@ -406,9 +406,14 @@ except ImportError as e:
 
 try:
     from simple_pdf_generator import SimplePDFGenerator
+    simple_pdf_generator = SimplePDFGenerator()
     print("✅ 간단 PDF 생성기 import 성공")
 except ImportError as e:
     print(f"⚠️ 간단 PDF 생성기를 찾을 수 없습니다: {e}")
+    simple_pdf_generator = None
+except Exception as e:
+    print(f"⚠️ 간단 PDF 생성기 초기화 실패: {e}")
+    simple_pdf_generator = None
 
 try:
     from label_ocr_extractor import LabelOCRExtractor
@@ -4667,9 +4672,13 @@ def api_document_generation():
                         # enhanced_template_pdf_generator가 없으면 간단한 PDF 생성
                         print("⚠️ enhanced_template_pdf_generator 없음, 간단한 PDF 생성")
                         try:
-                            from simple_pdf_generator import generate_simple_pdf
-                            generate_simple_pdf(content, pdf_path, doc_name)
-                            print("✅ simple_pdf_generator로 PDF 생성 성공")
+                            if simple_pdf_generator:
+                                simple_pdf_generator.generate_pdf(content, pdf_path, doc_name)
+                                print("✅ simple_pdf_generator 클래스로 PDF 생성 성공")
+                            else:
+                                from simple_pdf_generator import generate_simple_pdf
+                                generate_simple_pdf(content, pdf_path, doc_name)
+                                print("✅ simple_pdf_generator 함수로 PDF 생성 성공")
                             
                             # 배포 환경에서 파일을 캐시에 등록
                             if os.path.exists(pdf_path):
@@ -4782,10 +4791,14 @@ def api_document_generation():
                     if not pdf_created:
                         try:
                             print("🔄 simple_pdf_generator 재시도...")
-                            from simple_pdf_generator import generate_simple_pdf
-                            generate_simple_pdf(content, pdf_path, doc_name)
+                            if simple_pdf_generator:
+                                simple_pdf_generator.generate_pdf(content, pdf_path, doc_name)
+                                print("✅ simple_pdf_generator 클래스 재시도 성공")
+                            else:
+                                from simple_pdf_generator import generate_simple_pdf
+                                generate_simple_pdf(content, pdf_path, doc_name)
+                                print("✅ simple_pdf_generator 함수 재시도 성공")
                             pdf_created = True
-                            print("✅ simple_pdf_generator 재시도 성공")
                             
                             # 배포 환경에서 파일을 캐시에 등록
                             if os.path.exists(pdf_path):
@@ -4938,10 +4951,10 @@ def api_document_generation():
             
             # PDF 생성에 실패했지만 텍스트 문서는 생성된 경우
             if documents:
-                return jsonify({
-                    'success': True,
+            return jsonify({
+                'success': True,
                     'message': '서류 생성 완료 (PDF 생성 실패, 텍스트 문서만 제공)',
-                    'documents': documents,
+                'documents': documents,
                     'pdf_error': str(pdf_error),
                     'note': 'PDF 생성에 실패했지만 텍스트 문서는 생성되었습니다. 텍스트를 복사하여 사용하세요.',
                     'debug_info': {
@@ -4958,7 +4971,7 @@ def api_document_generation():
                         'error_type': type(pdf_error).__name__,
                         'error_message': str(pdf_error)
                     }
-                })
+            })
         except Exception as e:
             print(f"❌ 서류 생성 API 오류: {str(e)}")
             import traceback
@@ -5396,7 +5409,7 @@ def extract_pdf_data(filepath):
                 
                 # 텍스트 추출
                 text = page.get_text()
-                if text.strip():
+            if text.strip():
                     data['text_content'].append({
                         'page': page_num + 1,
                         'text': text.strip()
@@ -5429,7 +5442,7 @@ def extract_pdf_data(filepath):
                 'page': 1,
                 'text': "PDF 파일 (고급 추출 기능을 위해 PyMuPDF 설치 필요)"
             })
-            
+        
     except Exception as e:
         print(f"❌ PDF 추출 오류: {str(e)}")
         data['error'] = str(e)
@@ -7987,13 +8000,20 @@ def api_pdf_form_fill():
         # 3. simple_pdf_generator 시도
         if not pdf_created:
             try:
-                from simple_pdf_generator import generate_simple_pdf
-                output_filename = f"filled_{os.path.basename(full_path)}"
-                output_path = os.path.join("generated_documents", output_filename)
-                content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
-                generate_simple_pdf(content, output_path, "filled_form")
+                if simple_pdf_generator:
+                    output_filename = f"filled_{os.path.basename(full_path)}"
+                    output_path = os.path.join("generated_documents", output_filename)
+                    content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
+                    simple_pdf_generator.generate_pdf(content, output_path, "filled_form")
+                    print("✅ simple_pdf_generator 클래스로 PDF 생성 성공")
+                else:
+                    from simple_pdf_generator import generate_simple_pdf
+                    output_filename = f"filled_{os.path.basename(full_path)}"
+                    output_path = os.path.join("generated_documents", output_filename)
+                    content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
+                    generate_simple_pdf(content, output_path, "filled_form")
+                    print("✅ simple_pdf_generator 함수로 PDF 생성 성공")
                 pdf_created = True
-                print("✅ simple_pdf_generator로 PDF 생성 성공")
             except Exception as e:
                 print(f"❌ simple_pdf_generator 실패: {e}")
         
@@ -8722,6 +8742,10 @@ def process_simple_natural_language_query(query):
         
         # 기본 응답
         return "중국 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
+        return jsonify({
+            "success": False,
+            "message": f"샘플 데이터 로드 중 오류: {str(e)}"
+        })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
