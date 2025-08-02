@@ -5984,6 +5984,31 @@ def get_template_info(doc_type):
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/api/debug/file-cache')
+def debug_file_cache():
+    """파일 캐시 상태 디버그 엔드포인트"""
+    try:
+        cache_info = {
+            'cache_size': len(file_manager.file_cache),
+            'is_cloud_environment': file_manager.is_cloud,
+            'temp_directory': file_manager.temp_dir,
+            'available_files': []
+        }
+        
+        # 캐시된 파일 정보
+        for filename, file_info in file_manager.file_cache.items():
+            cache_info['available_files'].append({
+                'filename': filename,
+                'size': file_info.get('size', 0),
+                'type': file_info.get('type', 'unknown'),
+                'created': file_info.get('created', '').strftime('%Y-%m-%d %H:%M:%S') if file_info.get('created') else '',
+                'path_exists': os.path.exists(file_info.get('path', '')) if file_info.get('path') else False
+            })
+        
+        return jsonify(cache_info)
+    except Exception as e:
+        return jsonify({'error': f'디버그 정보 조회 실패: {str(e)}'})
+
 @app.route('/api/ocr-extract', methods=['POST'])
 def api_ocr_extract():
     """OCR 기반 라벨 정보 추출 API (한글 우선 + 번역 지원)"""
