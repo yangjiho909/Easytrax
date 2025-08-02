@@ -150,15 +150,28 @@
                 position: relative;
                 padding: 1rem;
                 margin-bottom: 1rem;
+                box-shadow: none;
             }
             
             .main-content {
-                margin-left: 0;
+                margin-left: 0 !important;
                 padding: 1rem;
+                width: 100% !important;
+                flex: none !important;
             }
             
             .dashboard-container {
                 flex-direction: column;
+                min-height: auto;
+            }
+            
+            /* 모바일에서 사이드바 완전 재설정 */
+            .sidebar {
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: auto !important;
+                overflow: visible !important;
             }
             
             .header {
