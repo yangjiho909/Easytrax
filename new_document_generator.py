@@ -44,9 +44,17 @@ class NewDocumentGenerator:
                 except:
                     return 'N/A'
             
-            # 총액 계산
-            quantity = product_info.get('quantity', 0)
-            unit_price = product_info.get('unit_price', 0)
+            # 총액 계산 - 문자열을 숫자로 변환
+            quantity_str = product_info.get('quantity', '0')
+            unit_price_str = product_info.get('unit_price', '0')
+            
+            # 숫자 추출 (문자열에서 숫자만 추출)
+            import re
+            quantity_match = re.search(r'(\d+(?:\.\d+)?)', str(quantity_str))
+            unit_price_match = re.search(r'(\d+(?:\.\d+)?)', str(unit_price_str))
+            
+            quantity = float(quantity_match.group(1)) if quantity_match else 0
+            unit_price = float(unit_price_match.group(1)) if unit_price_match else 0
             total_amount = quantity * unit_price
             
             # 문자열 연결 방식으로 문서 생성
