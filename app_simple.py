@@ -77,6 +77,7 @@ class SimpleDocumentGenerator:
         
         try:
             print(f"📄 PDF 생성 시작: {doc_type}")
+            print(f"📁 출력 경로: {output_path}")
             
             # 템플릿 파일 경로 확인
             template_info = self.template_files.get(doc_type)
@@ -141,15 +142,18 @@ class SimpleDocumentGenerator:
                             fontname="helv"
                         )
             
-            # 출력 디렉토리 생성
+            # 출력 디렉토리 생성 (전역 변수 사용)
             output_dir = os.path.dirname(output_path)
+            print(f"📁 출력 디렉토리 생성 시도: {output_dir}")
             os.makedirs(output_dir, exist_ok=True)
+            print(f"✅ 출력 디렉토리 확인: {output_dir}")
             
             # PDF 저장
             doc.save(output_path)
             doc.close()
             
             print(f"✅ PDF 생성 완료: {output_path}")
+            print(f"📄 파일 크기: {os.path.getsize(output_path)} bytes")
             return output_path
             
         except Exception as e:
@@ -163,6 +167,7 @@ class SimpleDocumentGenerator:
         try:
             # 텍스트 파일로 저장
             text_path = output_path.replace('.pdf', '.txt')
+            print(f"📝 텍스트 폴백 시작: {text_path}")
             
             lines = []
             lines.append(f"=== {doc_type} ===")
@@ -178,6 +183,7 @@ class SimpleDocumentGenerator:
             
             # 출력 디렉토리 생성
             output_dir = os.path.dirname(text_path)
+            print(f"📁 텍스트 파일 출력 디렉토리: {output_dir}")
             os.makedirs(output_dir, exist_ok=True)
             
             # 텍스트 파일 저장
@@ -185,10 +191,12 @@ class SimpleDocumentGenerator:
                 f.write('\n'.join(lines))
             
             print(f"✅ 텍스트 파일 생성 완료: {text_path}")
+            print(f"📄 텍스트 파일 크기: {os.path.getsize(text_path)} bytes")
             return text_path
             
         except Exception as e:
             print(f"❌ 텍스트 폴백도 실패: {str(e)}")
+            print(f"📋 상세 오류: {traceback.format_exc()}")
             return None
     
     def _split_text_into_lines(self, text, chars_per_line, max_lines):
@@ -296,6 +304,38 @@ class SimpleDocumentGenerator:
 # 전역 변수로 생성기 인스턴스 생성
 doc_generator = SimpleDocumentGenerator()
 
+# 배포 환경에서 안정적인 파일 저장을 위한 설정
+import tempfile
+import shutil
+
+# 임시 디렉토리 또는 현재 디렉토리에 generated_documents 폴더 생성
+def ensure_generated_documents_dir():
+    """generated_documents 폴더가 존재하는지 확인하고 없으면 생성"""
+    try:
+        # 현재 작업 디렉토리 기준으로 폴더 생성 시도
+        docs_dir = os.path.join(os.getcwd(), "generated_documents")
+        os.makedirs(docs_dir, exist_ok=True)
+        print(f"✅ generated_documents 폴더 확인/생성: {docs_dir}")
+        return docs_dir
+    except Exception as e:
+        print(f"⚠️ 기본 폴더 생성 실패: {e}")
+        try:
+            # 임시 디렉토리 사용
+            temp_dir = tempfile.gettempdir()
+            docs_dir = os.path.join(temp_dir, "kati_generated_documents")
+            os.makedirs(docs_dir, exist_ok=True)
+            print(f"✅ 임시 폴더 사용: {docs_dir}")
+            return docs_dir
+        except Exception as e2:
+            print(f"❌ 임시 폴더도 생성 실패: {e2}")
+            # 마지막 수단: 현재 디렉토리 사용
+            docs_dir = "generated_documents"
+            print(f"⚠️ 현재 디렉토리 사용: {docs_dir}")
+            return docs_dir
+
+# 전역 변수로 폴더 경로 저장
+GENERATED_DOCS_DIR = ensure_generated_documents_dir()
+
 @app.route('/')
 def index():
     """메인 페이지"""
@@ -393,7 +433,7 @@ def api_document_generation():
                 # PDF 파일 생성
                 safe_name = doc_type.replace("/", "_").replace(" ", "_")
                 pdf_filename = f"{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                pdf_path = os.path.join("generated_documents", pdf_filename)
+                pdf_path = os.path.join(GENERATED_DOCS_DIR, pdf_filename)
                 
                 # PDF 생성 (폴백 기능 포함)
                 generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
@@ -451,13 +491,36 @@ def api_document_generation():
 def download_document(filename):
     """파일 다운로드 (PDF 또는 텍스트)"""
     try:
-        file_path = os.path.join("generated_documents", filename)
+        file_path = os.path.join(GENERATED_DOCS_DIR, filename)
+        print(f"🔍 파일 다운로드 요청: {filename}")
+        print(f"📁 전체 경로: {file_path}")
+        print(f"📁 폴더 존재: {os.path.exists(GENERATED_DOCS_DIR)}")
+        print(f"📄 파일 존재: {os.path.exists(file_path)}")
+        
+        # 폴더 내용 확인
+        if os.path.exists(GENERATED_DOCS_DIR):
+            files_in_dir = os.listdir(GENERATED_DOCS_DIR)
+            print(f"📋 폴더 내 파일들: {files_in_dir}")
+        
         if os.path.exists(file_path):
+            print(f"✅ 파일 발견, 다운로드 시작: {file_path}")
             return send_file(file_path, as_attachment=True, download_name=filename)
         else:
-            return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+            print(f"❌ 파일을 찾을 수 없음: {file_path}")
+            return jsonify({
+                'error': '파일을 찾을 수 없습니다.',
+                'filename': filename,
+                'file_path': file_path,
+                'folder_exists': os.path.exists(GENERATED_DOCS_DIR),
+                'folder_path': GENERATED_DOCS_DIR
+            }), 404
     except Exception as e:
-        return jsonify({'error': f'파일 다운로드 실패: {str(e)}'}), 500
+        print(f"❌ 파일 다운로드 오류: {str(e)}")
+        return jsonify({
+            'error': f'파일 다운로드 실패: {str(e)}',
+            'filename': filename,
+            'file_path': os.path.join(GENERATED_DOCS_DIR, filename) if 'GENERATED_DOCS_DIR' in globals() else 'unknown'
+        }), 500
 
 @app.route('/api/system-status')
 def api_system_status():
