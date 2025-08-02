@@ -2149,6 +2149,11 @@ def index():
 def dashboard():
     """대시보드 페이지"""
     return render_template('dashboard.html')
+
+@app.route('/nutrition-label')
+def nutrition_label():
+    """영양성분표 라벨 생성 페이지"""
+    return render_template('nutrition_label.html')
 @app.route('/api/dashboard-stats')
 @monitor_performance('dashboard_stats')
 def api_dashboard_stats():
@@ -5878,6 +5883,39 @@ def api_compliance_check():
         
     except Exception as e:
         return jsonify({'error': f'준수성 검토 중 오류가 발생했습니다: {str(e)}'})
+
+@app.route('/api/nutrition-label', methods=['POST'])
+def api_nutrition_label():
+    """영양성분표 생성 API"""
+    print("🏷️ 영양성분표 생성 API 호출됨")
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON 데이터가 필요합니다.'})
+        
+        country = data.get('country', '중국')
+        product_info = data.get('product_info', {})
+        
+        print(f"🌍 국가: {country}")
+        print(f"📦 제품 정보: {product_info}")
+        
+        # 라벨 생성 (OCR 없이 직접 생성)
+        label_result = generate_label(country, product_info, {})
+        
+        return jsonify({
+            'success': True,
+            'label_result': label_result,
+            'product_info': product_info,
+            'country': country
+        })
+        
+    except Exception as e:
+        print(f"❌ 영양성분표 생성 API 오류: {str(e)}")
+        return jsonify({
+            'error': f'영양성분표 생성 중 오류가 발생했습니다: {str(e)}',
+            'success': False
+        })
 
 @app.route('/uploaded_labels/<filename>')
 def serve_uploaded_label(filename):

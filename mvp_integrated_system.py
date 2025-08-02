@@ -447,13 +447,23 @@ class MVPSystem:
         # 1. 필수 서류 검사 (30점)
         required_documents = regulations.get("필요서류", [])
         missing_docs = []
+        prepared_docs = []
+        
         for doc in required_documents:
             if doc not in prepared_documents:
                 missing_docs.append(doc)
+            else:
+                prepared_docs.append(doc)
         
+        # 누락된 서류만 이슈로 추가
         if missing_docs:
             analysis["missing_requirements"].extend(missing_docs)
             analysis["critical_issues"].append(f"필수 서류 부족: {', '.join(missing_docs)}")
+        
+        # 준비된 서류는 성공으로 기록
+        if prepared_docs:
+            analysis["critical_issues"] = [issue for issue in analysis["critical_issues"] 
+                                         if not any(doc in issue for doc in prepared_docs)]
         
         # 서류 점수 계산: 준비된 서류 비율에 따라 점수 부여
         docs_score = max(0, (len(required_documents) - len(missing_docs)) / len(required_documents) * 30) if required_documents else 30
@@ -522,7 +532,15 @@ class MVPSystem:
             if field in labeling_info and labeling_info[field]:
                 labeling_score += points
                 labeling_checks += 1
+                # 체크된 항목은 성공으로 기록
+                if severity == "critical":
+                    analysis["critical_issues"] = [issue for issue in analysis["critical_issues"] 
+                                                 if not description in issue]
+                else:
+                    analysis["minor_issues"] = [issue for issue in analysis["minor_issues"] 
+                                              if not description in issue]
             else:
+                # 체크되지 않은 항목만 이슈로 추가
                 if severity == "critical":
                     analysis["critical_issues"].append(f"{country} 규정: {description} 필수")
                 else:
@@ -604,25 +622,30 @@ class MVPSystem:
         return analysis
     
     def _generate_improvement_suggestions(self, analysis, country):
-        """개선 제안 생성"""
+        """개선 제안 생성 - 체크된 항목 제외"""
         suggestions = []
         
+        # 실제로 부족한 서류만 제안
         if analysis["missing_requirements"]:
             suggestions.append("📄 필수 서류 준비:")
             for doc in analysis["missing_requirements"]:
                 suggestions.append(f"   • {doc} 서류를 즉시 준비하세요.")
         
+        # 실제로 체크되지 않은 critical 이슈만 제안
         if analysis["critical_issues"]:
             suggestions.append("🚨 긴급 개선사항:")
             for issue in analysis["critical_issues"]:
-                suggestions.append(f"   • {issue}")
+                # 이미 준비된 서류나 체크된 라벨링 항목은 제외
+                if not any(keyword in issue for keyword in ["서류 부족", "필수"]):
+                    suggestions.append(f"   • {issue}")
         
+        # 실제로 체크되지 않은 minor 이슈만 제안
         if analysis["minor_issues"]:
             suggestions.append("⚠️ 권장 개선사항:")
             for issue in analysis["minor_issues"]:
                 suggestions.append(f"   • {issue}")
         
-        # 국가별 특별 제안
+        # 국가별 특별 제안 (항상 표시)
         if country == "중국":
             suggestions.append("🇨🇳 중국 특별 권장사항:")
             suggestions.append("   • GB 7718-2025 규정에 맞는 라벨 디자인")
