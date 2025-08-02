@@ -3,7 +3,9 @@ services:
     name: kati-simple
     env: python
     buildCommand: pip install -r requirements_simple.txt
-    startCommand: gunicorn app_simple:app
+    startCommand: gunicorn app_simple:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2 --keep-alive 120 --max-requests 1000 --max-requests-jitter 100
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0 
+        value: 3.11.0
+      - key: PORT
+        value: 10000 
