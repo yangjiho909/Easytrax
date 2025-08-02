@@ -16,6 +16,7 @@ import traceback
 import tempfile
 import shutil
 import platform
+from urllib.parse import unquote
 
 app = Flask(__name__)
 
@@ -581,17 +582,41 @@ def api_document_generation():
                     **doc_data
                 )
                 
-                # 영문 파일명 생성 (한글 및 특수문자 제거)
-                doc_type_mapping = {
-                    "상업송장": "commercial_invoice",
-                    "포장명세서": "packing_list"
-                }
-                english_doc_type = doc_type_mapping.get(doc_type, doc_type)
-                
-                # 안전한 파일명 생성
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                safe_filename = f"{english_doc_type}_{timestamp}.pdf"
-                pdf_path = os.path.join(GENERATED_DOCS_DIR, safe_filename)
+                                 # 영문 파일명 생성 (한글 및 특수문자 제거)
+                 doc_type_mapping = {
+                     "상업송장": "commercial_invoice",
+                     "포장명세서": "packing_list"
+                 }
+                 english_doc_type = doc_type_mapping.get(doc_type, doc_type)
+                 
+                 # 안전한 파일명 생성 (영문만 사용)
+                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                 safe_filename = f"{english_doc_type}_{timestamp}.pdf"
+                 pdf_path = os.path.join(GENERATED_DOCS_DIR, safe_filename)
+                 
+                 print(f"📁 생성할 파일 경로: {pdf_path}")
+                 print(f"📁 절대 경로: {os.path.abspath(pdf_path)}")
+                 
+                 # PDF 생성 (폴백 기능 포함)
+                 generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
+                 
+                 if generated_file:
+                     # 파일 확장자에 따라 파일명 결정
+                     if generated_file.endswith('.txt'):
+                         # 텍스트 파일인 경우
+                         actual_filename = os.path.basename(generated_file)
+                         pdf_files[doc_type] = actual_filename
+                         documents[doc_type] = f"텍스트 파일로 생성됨: {actual_filename}"
+                     else:
+                         # PDF 파일인 경우 - 영문 파일명 사용
+                         pdf_files[doc_type] = safe_filename  # 영문 파일명 사용
+                         documents[doc_type] = pdf_data
+                     
+                     print(f"✅ {doc_type} 생성 완료: {generated_file}")
+                     print(f"📄 저장된 파일명: {safe_filename}")
+                 else:
+                     print(f"❌ {doc_type} 생성 실패")
+                     documents[doc_type] = f"❌ 서류 생성 실패"
                 
                 print(f"📁 생성할 파일 경로: {pdf_path}")
                 print(f"📁 절대 경로: {os.path.abspath(pdf_path)}")
@@ -623,10 +648,12 @@ def api_document_generation():
         print(f"✅ 서류 생성 완료: {len(documents)}개")
         print(f"📄 생성된 서류: {list(documents.keys())}")
         
-        # 다운로드 URL 생성
-        download_urls = {}
-        for doc_name, filename in pdf_files.items():
-            download_urls[doc_name] = f"/api/download-document/{filename}"
+                 # 다운로드 URL 생성 (영문 파일명 사용)
+         download_urls = {}
+         for doc_name, filename in pdf_files.items():
+             # 영문 파일명을 URL에 사용
+             download_urls[doc_name] = f"/api/download-document/{filename}"
+             print(f"🔗 {doc_name} 다운로드 URL: {download_urls[doc_name]}")
         
         return jsonify({
             'success': True,
@@ -663,7 +690,18 @@ def api_document_generation():
 def download_document(filename):
     """파일 다운로드 (PDF 또는 텍스트)"""
     try:
-        file_path = os.path.join(GENERATED_DOCS_DIR, filename)
+        print(f"🔍 다운로드 요청 원본 파일명: {filename}")
+        
+        # 파일명에서 한글 디코딩 (여러 번 시도)
+        decoded_filename = unquote(filename)
+        print(f"🔍 디코딩된 파일명: {decoded_filename}")
+        
+        # 추가 디코딩 시도 (이중 인코딩된 경우)
+        if '%' in decoded_filename:
+            decoded_filename = unquote(decoded_filename)
+            print(f"🔍 이중 디코딩된 파일명: {decoded_filename}")
+        
+        file_path = os.path.join(GENERATED_DOCS_DIR, decoded_filename)
         abs_file_path = os.path.abspath(file_path)
         
         print(f"🔍 파일 다운로드 요청: {filename}")
@@ -732,7 +770,7 @@ def download_document(filename):
             }), 403
         
         print(f"✅ 파일 발견, 다운로드 시작: {target_path}")
-        return send_file(target_path, as_attachment=True, download_name=filename)
+        return send_file(target_path, as_attachment=True, download_name=decoded_filename)
         
     except Exception as e:
         print(f"❌ 파일 다운로드 오류: {str(e)}")
