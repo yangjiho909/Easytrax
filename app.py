@@ -8722,10 +8722,6 @@ def process_simple_natural_language_query(query):
         
         # 기본 응답
         return "중국 수출에 대해 구체적으로 질문해주세요. 서류 요건, 규제사항, 관세 등에 대해 답변드릴 수 있습니다."
-        return jsonify({
-            "success": False,
-            "message": f"샘플 데이터 로드 중 오류: {str(e)}"
-        })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

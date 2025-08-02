@@ -15,6 +15,16 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+class SimplePDFGenerator:
+    """간단한 PDF 생성기 클래스"""
+    
+    def __init__(self):
+        self.font_registered = False
+    
+    def generate_pdf(self, content: str, output_path: str, doc_name: str):
+        """PDF 생성 메서드"""
+        return generate_simple_pdf(content, output_path, doc_name)
+
 def generate_simple_pdf(content: str, output_path: str, doc_name: str):
     """간단한 PDF 생성"""
     try:
