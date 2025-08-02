@@ -2668,10 +2668,74 @@ def api_compliance_analysis():
                             print(f"⚠️ 파일 저장 실패: {e}")
                             continue
         
-        # 문서가 없는 경우 기본 분석 수행
-        if not uploaded_files and not prepared_documents and not uploaded_documents:
-            print("📋 문서 없음 - 기본 분석 수행")
-            return perform_basic_compliance_analysis(country, product_type, company_info, product_info)
+        # 문서가 없는 경우 WebMVPSystem 사용 (체크박스 지원)
+        print(f"🔍 조건 확인: uploaded_files={len(uploaded_files)}, prepared_documents={len(prepared_documents)}, uploaded_documents={len(uploaded_documents)}")
+        print(f"🔍 조건 확인: uploaded_files={uploaded_files}, prepared_documents={prepared_documents}, uploaded_documents={uploaded_documents}")
+        
+        # 체크박스 정보가 있는지 확인
+        has_checkbox_info = any([
+            labeling_info.get('has_nutrition_label') is not None,
+            labeling_info.get('has_allergy_info') is not None,
+            labeling_info.get('has_expiry_date') is not None,
+            labeling_info.get('has_ingredients') is not None,
+            labeling_info.get('has_storage_info') is not None,
+            labeling_info.get('has_manufacturer_info') is not None
+        ])
+        print(f"🔍 체크박스 정보 존재: {has_checkbox_info}")
+        
+        # 체크박스 정보가 있으면 WebMVPSystem 사용 (문서 유무와 관계없이)
+        if has_checkbox_info:
+            print("📋 문서 없음 - WebMVPSystem 분석 수행")
+            web_system = WebMVPSystem()
+            analysis_result = web_system.analyze_compliance(
+                country, product_type, company_info, product_info, 
+                prepared_documents, labeling_info
+            )
+            
+            # 응답 형식 맞추기
+            return jsonify({
+                'success': True,
+                'message': f'{country} {product_type} 규제 준수성 분석이 완료되었습니다.',
+                'compliance_analysis': {
+                    'overall_score': analysis_result.get('overall_score', 0),
+                    'compliance_status': analysis_result.get('compliance_status', '미준수'),
+                    'critical_issues': analysis_result.get('critical_issues', []),
+                    'minor_issues': analysis_result.get('minor_issues', []),
+                    'suggestions': analysis_result.get('improvement_suggestions', []),
+                    'analysis_details': {
+                        'country': country,
+                        'product_type': product_type,
+                        'missing_documents': analysis_result.get('missing_requirements', []),
+                        'has_nutrition_info': labeling_info.get('has_nutrition_label', False),
+                        'has_allergy_info': labeling_info.get('has_allergy_info', False),
+                        'has_manufacturer_info': labeling_info.get('has_manufacturer_info', False)
+                    }
+                },
+                'analysis_summary': {
+                    'compliance_score': analysis_result.get('overall_score', 0),
+                    'critical_issues': len(analysis_result.get('critical_issues', [])),
+                    'major_issues': 0,
+                    'minor_issues': len(analysis_result.get('minor_issues', [])),
+                    'total_documents': 0,
+                    'analyzed_documents': []
+                },
+                'checklist': analysis_result.get('improvement_suggestions', []),
+                'correction_guide': {
+                    'timeline': '2-4주 소요 예상',
+                    'estimated_cost': '검역비용 및 서류 준비 비용',
+                    'priority_actions': ['현지 언어로 라벨 작성', '필수 정보 표시 확인', '검역 서류 준비']
+                },
+                'ocr_results': {},
+                'structured_data': {},
+                'regulation_matching': {
+                    'country': country,
+                    'product_type': product_type,
+                    'regulations': {},
+                    'compliance_checks': {},
+                    'missing_requirements': analysis_result.get('missing_requirements', []),
+                    'violations': []
+                }
+            })
         
         try:
             # 최적화된 OCR/문서분석 수행
