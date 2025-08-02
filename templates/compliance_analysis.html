@@ -51,13 +51,12 @@
         }
         
         .dashboard-container {
-            display: flex;
+            display: block;
             min-height: 100vh;
-            align-items: flex-start;
         }
         
         .sidebar {
-            width: 280px;
+            width: 100%;
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             padding: var(--spacing-lg);
@@ -65,6 +64,7 @@
             position: relative;
             height: auto;
             overflow-y: auto;
+            margin-bottom: var(--spacing-lg);
         }
         
         /* 모바일 반응형 - 강제 적용 */
@@ -186,7 +186,6 @@
         }
         
         .main-content {
-            flex: 1;
             padding: var(--spacing-lg);
         }
         
@@ -231,22 +230,22 @@
             text-shadow: 0 1px 4px rgba(44,62,80,0.2);
         }
         
-        /* 사이드바 네비게이션 스타일 */
+        /* 상단 네비게이션 스타일 */
         .nav-link {
             color: #e0e6ed !important;
             padding: 0.75rem 1rem;
             border-radius: 8px;
-            margin-bottom: 0.25rem;
+            margin-right: 0.5rem;
             transition: all 0.3s ease;
             text-decoration: none;
-            display: flex;
+            display: inline-flex;
             align-items: center;
         }
         
         .nav-link:hover {
             background: rgba(255,255,255,0.1);
             color: #fff !important;
-            transform: translateX(5px);
+            transform: translateY(-2px);
         }
         
         .nav-link.active {
@@ -257,7 +256,7 @@
         
         .nav-icon {
             width: 20px;
-            margin-right: 0.75rem;
+            margin-right: 0.5rem;
             text-align: center;
         }
         
@@ -568,7 +567,7 @@
                 <small class="text-muted" style="color:#e0e6ed!important;">수출 통관 관리 시스템</small>
             </div>
             
-            <nav class="nav flex-column">
+            <nav class="nav">
                 <div class="nav-item">
                     <a href="/dashboard" class="nav-link">
                         <i class="fas fa-tachometer-alt nav-icon"></i>
