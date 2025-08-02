@@ -5396,29 +5396,41 @@ def extract_pdf_data(filepath):
                 
                 # 텍스트 추출
                 text = page.get_text()
-            if text.strip():
+                if text.strip():
                     data['text_content'].append({
                         'page': page_num + 1,
                         'text': text.strip()
                     })
                 
-                # 테이블 추출
-                tables = page.get_tables()
-                for table_idx, table in enumerate(tables):
-                    data['tables'].append({
-                        'page': page_num + 1,
-                        'table_index': table_idx,
-                        'data': table
-                    })
+                # 테이블 추출 (PyMuPDF 버전에 따라 다를 수 있음)
+                try:
+                    tables = page.get_tables()
+                    for table_idx, table in enumerate(tables):
+                        data['tables'].append({
+                            'page': page_num + 1,
+                            'table_index': table_idx,
+                            'data': table
+                        })
+                except AttributeError:
+                    # get_tables 메서드가 없는 경우
+                    print("⚠️ 테이블 추출 기능을 사용할 수 없습니다")
+                except Exception as e:
+                    print(f"⚠️ 테이블 추출 실패: {e}")
                 
-                # 이미지 추출
-                images = page.get_images()
-                for img_idx, img in enumerate(images):
-                    data['images'].append({
-                        'page': page_num + 1,
-                        'image_index': img_idx,
-                        'bbox': img[0:4]
-                    })
+                # 이미지 추출 (PyMuPDF 버전에 따라 다를 수 있음)
+                try:
+                    images = page.get_images()
+                    for img_idx, img in enumerate(images):
+                        data['images'].append({
+                            'page': page_num + 1,
+                            'image_index': img_idx,
+                            'bbox': img[0:4]
+                        })
+                except AttributeError:
+                    # get_images 메서드가 없는 경우
+                    print("⚠️ 이미지 추출 기능을 사용할 수 없습니다")
+                except Exception as e:
+                    print(f"⚠️ 이미지 추출 실패: {e}")
             
             doc.close()
             
