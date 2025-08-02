@@ -66,6 +66,124 @@
             overflow-y: auto;
         }
         
+        /* 모바일 반응형 - 강제 적용 */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                display: block !important;
+                flex-direction: column !important;
+                min-height: auto !important;
+            }
+            
+            .sidebar {
+                position: relative !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: auto !important;
+                overflow: visible !important;
+                box-shadow: none !important;
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+                border-radius: 8px !important;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1rem !important;
+                width: 100% !important;
+                flex: none !important;
+            }
+            
+            .header {
+                min-height: 150px !important;
+                padding: 1.5rem 1rem 1rem 1rem !important;
+            }
+            
+            .header-title {
+                font-size: 1.8rem !important;
+            }
+            
+            .header-desc {
+                font-size: 1rem !important;
+            }
+            
+            .header-logo {
+                width: 80px !important;
+            }
+            
+            .form-section {
+                padding: 1.5rem !important;
+                margin-bottom: 1.5rem !important;
+                border-radius: 12px !important;
+            }
+            
+            .form-control, .form-select {
+                padding: 0.6rem 0.8rem !important;
+                font-size: 0.95rem !important;
+            }
+            
+            .btn-analyze {
+                width: 100% !important;
+                padding: 1rem 2rem !important;
+                font-size: 1.1rem !important;
+                border-radius: 50px !important;
+            }
+            
+            .checkbox-group {
+                max-height: 300px !important;
+                overflow-y: auto !important;
+                border: 1px solid #e9ecef !important;
+                border-radius: 8px !important;
+                padding: 1rem !important;
+                background: #f8f9fa !important;
+            }
+            
+            .form-check {
+                margin-bottom: 0.8rem !important;
+                padding: 0.5rem !important;
+                border-radius: 6px !important;
+            }
+            
+            .form-check-input {
+                width: 1.2rem !important;
+                height: 1.2rem !important;
+            }
+            
+            .form-check-label {
+                font-size: 0.9rem !important;
+                line-height: 1.4 !important;
+                padding-left: 0.5rem !important;
+            }
+            
+            textarea.form-control {
+                min-height: 80px !important;
+            }
+            
+            .alert {
+                padding: 0.75rem !important;
+                font-size: 0.9rem !important;
+                line-height: 1.4 !important;
+                border-radius: 8px !important;
+            }
+            
+            .suggestion-item {
+                padding: 0.75rem !important;
+                font-size: 0.9rem !important;
+                line-height: 1.4 !important;
+                border-radius: 8px !important;
+            }
+            
+            .result-card {
+                padding: 1.5rem !important;
+                border-radius: 12px !important;
+            }
+            
+            .score-circle {
+                width: 100px !important;
+                height: 100px !important;
+                font-size: 1.5rem !important;
+            }
+        }
+        
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -144,35 +262,6 @@
         }
         
         @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                padding: 1rem;
-                margin-bottom: 1rem;
-                box-shadow: none;
-            }
-            
-            .main-content {
-                margin-left: 0 !important;
-                padding: 1rem;
-                width: 100% !important;
-                flex: none !important;
-            }
-            
-            .dashboard-container {
-                flex-direction: column;
-                min-height: auto;
-            }
-            
-            /* 모바일에서 사이드바 완전 재설정 */
-            .sidebar {
-                position: static !important;
-                width: 100% !important;
-                height: auto !important;
-                min-height: auto !important;
-                overflow: visible !important;
-            }
             
             .header {
                 min-height: 150px;

@@ -4646,41 +4646,120 @@ def api_document_generation():
                             generate_simple_pdf(content, pdf_path, doc_name)
                             print("✅ simple_pdf_generator로 PDF 생성 성공")
                         except ImportError:
-                            print("❌ 모든 PDF 생성기 로드 실패, 텍스트 파일로 대체")
-                            raise ImportError("PDF 생성기를 찾을 수 없습니다")
+                            # simple_pdf_generator도 없으면 기본 PDF 생성
+                            print("⚠️ simple_pdf_generator 없음, 기본 PDF 생성")
+                            try:
+                                from pdf_generator import pdf_generator
+                                # 기본 PDF 생성 로직
+                                pdf_generator.generate_filled_pdf(pdf_path, {}, {"content": content})
+                                print("✅ 기본 pdf_generator로 PDF 생성 성공")
+                            except ImportError:
+                                # 마지막 대안: reportlab 직접 사용
+                                print("⚠️ 모든 PDF 생성기 없음, reportlab 직접 사용")
+                                try:
+                                    from reportlab.lib.pagesizes import A4
+                                    from reportlab.platypus import SimpleDocTemplate, Paragraph
+                                    from reportlab.lib.styles import getSampleStyleSheet
+                                    
+                                    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+                                    styles = getSampleStyleSheet()
+                                    story = [Paragraph(content, styles['Normal'])]
+                                    doc.build(story)
+                                    print("✅ reportlab 직접 PDF 생성 성공")
+                                except Exception as reportlab_error:
+                                    print(f"❌ reportlab 직접 생성도 실패: {reportlab_error}")
+                                    # 최후의 수단: fpdf 사용
+                                    try:
+                                        from fpdf import FPDF
+                                        pdf = FPDF()
+                                        pdf.add_page()
+                                        pdf.set_font("Arial", size=12)
+                                        pdf.multi_cell(0, 10, content)
+                                        pdf.output(pdf_path)
+                                        print("✅ FPDF로 PDF 생성 성공")
+                                    except Exception as fpdf_error:
+                                        print(f"❌ FPDF 생성도 실패: {fpdf_error}")
+                                        raise Exception("모든 PDF 생성 방식이 실패했습니다")
                 except Exception as pdf_gen_error:
                     print(f"❌ PDF 생성 오류: {pdf_gen_error}")
                     import traceback
                     print(f"📋 상세 오류: {traceback.format_exc()}")
                     
-                    # 배포 환경에서의 폴백: 텍스트 파일 생성
-                    try:
-                        txt_filename = pdf_filename.replace('.pdf', '.txt')
-                        txt_path = os.path.join("generated_documents", txt_filename)
-                        
-                        # generated_documents 폴더가 없으면 현재 디렉토리에 생성
-                        if not os.path.exists("generated_documents"):
-                            txt_path = txt_filename
-                        
-                        with open(txt_path, 'w', encoding='utf-8') as f:
-                            f.write(f"=== {doc_name} ===\n\n{content}")
-                        pdf_files[doc_name] = txt_filename
-                        print(f"✅ 텍스트 파일로 대체 생성: {txt_path}")
-                        continue
-                    except Exception as txt_error:
-                        print(f"❌ 텍스트 파일 생성도 실패: {txt_error}")
-                        pdf_files[doc_name] = f"생성실패_{doc_name}.txt"
-                except Exception as pdf_gen_error:
-                    print(f"❌ PDF 생성 오류: {pdf_gen_error}")
-                    import traceback
-                    print(f"📋 상세 오류: {traceback.format_exc()}")
-                    # 텍스트 파일로 대체
-                    txt_filename = pdf_filename.replace('.pdf', '.txt')
-                    txt_path = os.path.join("generated_documents", txt_filename)
-                    with open(txt_path, 'w', encoding='utf-8') as f:
-                        f.write(f"=== {doc_name} ===\n\n{content}")
-                    pdf_files[doc_name] = txt_filename
-                    continue
+                    # 배포 환경에서의 폴백: 여러 PDF 생성 방식 재시도
+                    pdf_created = False
+                    
+                    # 1. enhanced_template_pdf_generator 재시도
+                    if not pdf_created:
+                        try:
+                            print("🔄 enhanced_template_pdf_generator 재시도...")
+                            from enhanced_template_pdf_generator import enhanced_template_pdf_generator
+                            enhanced_template_pdf_generator.generate_filled_pdf(
+                                doc_name, 
+                                {"content": content, "company_info": company_info, "product_info": product_info}, 
+                                pdf_path
+                            )
+                            pdf_created = True
+                            print("✅ enhanced_template_pdf_generator 재시도 성공")
+                        except Exception as e:
+                            print(f"❌ enhanced_template_pdf_generator 재시도 실패: {e}")
+                    
+                    # 2. simple_pdf_generator 재시도
+                    if not pdf_created:
+                        try:
+                            print("🔄 simple_pdf_generator 재시도...")
+                            from simple_pdf_generator import generate_simple_pdf
+                            generate_simple_pdf(content, pdf_path, doc_name)
+                            pdf_created = True
+                            print("✅ simple_pdf_generator 재시도 성공")
+                        except Exception as e:
+                            print(f"❌ simple_pdf_generator 재시도 실패: {e}")
+                    
+                    # 3. 기본 pdf_generator 재시도
+                    if not pdf_created:
+                        try:
+                            print("🔄 기본 pdf_generator 재시도...")
+                            from pdf_generator import pdf_generator
+                            pdf_generator.generate_filled_pdf(pdf_path, {}, {"content": content})
+                            pdf_created = True
+                            print("✅ 기본 pdf_generator 재시도 성공")
+                        except Exception as e:
+                            print(f"❌ 기본 pdf_generator 재시도 실패: {e}")
+                    
+                    # 4. reportlab 직접 사용 재시도
+                    if not pdf_created:
+                        try:
+                            print("🔄 reportlab 직접 사용 재시도...")
+                            from reportlab.lib.pagesizes import A4
+                            from reportlab.platypus import SimpleDocTemplate, Paragraph
+                            from reportlab.lib.styles import getSampleStyleSheet
+                            
+                            doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+                            styles = getSampleStyleSheet()
+                            story = [Paragraph(content, styles['Normal'])]
+                            doc.build(story)
+                            pdf_created = True
+                            print("✅ reportlab 직접 사용 재시도 성공")
+                        except Exception as e:
+                            print(f"❌ reportlab 직접 사용 재시도 실패: {e}")
+                    
+                    # 5. FPDF 최종 시도
+                    if not pdf_created:
+                        try:
+                            print("🔄 FPDF 최종 시도...")
+                            from fpdf import FPDF
+                            pdf = FPDF()
+                            pdf.add_page()
+                            pdf.set_font("Arial", size=12)
+                            pdf.multi_cell(0, 10, content)
+                            pdf.output(pdf_path)
+                            pdf_created = True
+                            print("✅ FPDF 최종 시도 성공")
+                        except Exception as e:
+                            print(f"❌ FPDF 최종 시도 실패: {e}")
+                            raise Exception("모든 PDF 생성 방식이 실패했습니다")
+                    
+                    if not pdf_created:
+                        raise Exception("PDF 생성에 실패했습니다")
                 print(f"✅ 개선된 템플릿 기반 PDF 생성 성공: {pdf_path}")  # 디버그 로그 추가
                 
                 # 파일 존재 확인
@@ -7565,9 +7644,103 @@ def api_pdf_form_fill():
                 'message': '입력 데이터에 오류가 있습니다.'
             }), 400
         
-        # PDF 생성
-        from pdf_generator import pdf_generator
-        output_path = pdf_generator.generate_filled_pdf(full_path, form_data, user_input)
+        # PDF 생성 - 여러 방식 시도
+        output_path = None
+        pdf_created = False
+        
+        # 1. 기본 pdf_generator 시도
+        try:
+            from pdf_generator import pdf_generator
+            output_path = pdf_generator.generate_filled_pdf(full_path, form_data, user_input)
+            pdf_created = True
+            print("✅ 기본 pdf_generator로 PDF 생성 성공")
+        except Exception as e:
+            print(f"❌ 기본 pdf_generator 실패: {e}")
+        
+        # 2. enhanced_template_pdf_generator 시도
+        if not pdf_created:
+            try:
+                from enhanced_template_pdf_generator import enhanced_template_pdf_generator
+                output_filename = f"filled_{os.path.basename(full_path)}"
+                output_path = os.path.join("generated_documents", output_filename)
+                enhanced_template_pdf_generator.generate_filled_pdf(
+                    "filled_form", 
+                    {"form_data": form_data, "user_input": user_input}, 
+                    output_path
+                )
+                pdf_created = True
+                print("✅ enhanced_template_pdf_generator로 PDF 생성 성공")
+            except Exception as e:
+                print(f"❌ enhanced_template_pdf_generator 실패: {e}")
+        
+        # 3. simple_pdf_generator 시도
+        if not pdf_created:
+            try:
+                from simple_pdf_generator import generate_simple_pdf
+                output_filename = f"filled_{os.path.basename(full_path)}"
+                output_path = os.path.join("generated_documents", output_filename)
+                content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
+                generate_simple_pdf(content, output_path, "filled_form")
+                pdf_created = True
+                print("✅ simple_pdf_generator로 PDF 생성 성공")
+            except Exception as e:
+                print(f"❌ simple_pdf_generator 실패: {e}")
+        
+        # 4. reportlab 직접 사용
+        if not pdf_created:
+            try:
+                from reportlab.lib.pagesizes import A4
+                from reportlab.platypus import SimpleDocTemplate, Paragraph
+                from reportlab.lib.styles import getSampleStyleSheet
+                
+                output_filename = f"filled_{os.path.basename(full_path)}"
+                output_path = os.path.join("generated_documents", output_filename)
+                os.makedirs("generated_documents", exist_ok=True)
+                
+                doc = SimpleDocTemplate(output_path, pagesize=A4)
+                styles = getSampleStyleSheet()
+                story = []
+                
+                # 폼 데이터 추가
+                story.append(Paragraph("Form Data:", styles['Heading1']))
+                for field_id, field_info in form_data.get('fields', {}).items():
+                    value = user_input.get(field_id, '')
+                    story.append(Paragraph(f"{field_info.get('label', field_id)}: {value}", styles['Normal']))
+                
+                doc.build(story)
+                pdf_created = True
+                print("✅ reportlab 직접 PDF 생성 성공")
+            except Exception as e:
+                print(f"❌ reportlab 직접 사용 실패: {e}")
+        
+        # 5. FPDF 최종 시도
+        if not pdf_created:
+            try:
+                from fpdf import FPDF
+                
+                output_filename = f"filled_{os.path.basename(full_path)}"
+                output_path = os.path.join("generated_documents", output_filename)
+                os.makedirs("generated_documents", exist_ok=True)
+                
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                
+                # 폼 데이터 추가
+                pdf.cell(0, 10, "Form Data:", ln=True)
+                for field_id, field_info in form_data.get('fields', {}).items():
+                    value = user_input.get(field_id, '')
+                    pdf.cell(0, 10, f"{field_info.get('label', field_id)}: {value}", ln=True)
+                
+                pdf.output(output_path)
+                pdf_created = True
+                print("✅ FPDF로 PDF 생성 성공")
+            except Exception as e:
+                print(f"❌ FPDF 실패: {e}")
+                raise Exception("모든 PDF 생성 방식이 실패했습니다")
+        
+        if not pdf_created or not output_path:
+            raise Exception("PDF 생성에 실패했습니다")
         
         # 생성된 PDF 파일명
         output_filename = os.path.basename(output_path)
@@ -7582,6 +7755,9 @@ def api_pdf_form_fill():
         })
         
     except Exception as e:
+        print(f"❌ PDF 생성 API 오류: {str(e)}")
+        import traceback
+        print(f"📋 상세 오류: {traceback.format_exc()}")
         return jsonify({'error': f'PDF 생성 실패: {str(e)}'}), 500
 
 @app.route('/api/notifications', methods=['GET'])
