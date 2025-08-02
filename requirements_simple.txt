@@ -1,8 +1,8 @@
-# 배포 환경용 간단한 의존성 (서류 생성 API 전용)
+# 배포 환경용 의존성 (서류 생성 API + PDF 생성)
 Flask==2.3.3
 requests==2.31.0
+PyMuPDF==1.26.3
 
 # 선택적 PDF 생성 (필요시에만)
-# PyMuPDF==1.26.3
 # reportlab==4.0.4
 # fpdf==1.7.2 

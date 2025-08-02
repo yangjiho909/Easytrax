@@ -2,22 +2,34 @@
 # -*- coding: utf-8 -*-
 
 """
-🌐 KATI 간단한 서류 생성 API - 배포 환경용
-- 최소한의 의존성으로 서류 생성 기능 제공
+🌐 KATI 간단한 서류 생성 API - 배포 환경용 (PDF 생성 포함)
+- 좌표 매핑된 PDF 템플릿 활용
 - 배포 환경에서 안정적으로 작동
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from datetime import datetime
 import os
+import json
+import fitz  # PyMuPDF
 
 app = Flask(__name__)
 
 class SimpleDocumentGenerator:
-    """간단한 서류 생성기"""
+    """간단한 서류 생성기 (PDF 포함)"""
     
     def __init__(self):
         print("✅ SimpleDocumentGenerator 초기화 완료")
+        self.template_files = {
+            "상업송장": {
+                "pdf": "uploaded_templates/상업송장 빈 템플릿.pdf",
+                "coordinates": "uploaded_templates/상업송장 좌표 반영.json"
+            },
+            "포장명세서": {
+                "pdf": "uploaded_templates/포장명세서 빈 템플릿.pdf", 
+                "coordinates": "uploaded_templates/포장명세서 좌표 반영.json"
+            }
+        }
     
     def generate_document(self, doc_type, country, product, company_info, **kwargs):
         """문서 생성 메인 함수"""
@@ -31,6 +43,96 @@ class SimpleDocumentGenerator:
         except Exception as e:
             print(f"❌ 문서 생성 오류: {str(e)}")
             return f"문서 생성 중 오류가 발생했습니다: {str(e)}"
+    
+    def generate_pdf_with_coordinates(self, doc_type, data, output_path):
+        """좌표 기반 PDF 생성"""
+        try:
+            print(f"📄 PDF 생성 시작: {doc_type}")
+            
+            # 템플릿 파일 경로 확인
+            template_info = self.template_files.get(doc_type)
+            if not template_info:
+                raise ValueError(f"템플릿 정보를 찾을 수 없습니다: {doc_type}")
+            
+            pdf_template = template_info["pdf"]
+            coord_file = template_info["coordinates"]
+            
+            print(f"📁 PDF 템플릿: {pdf_template}")
+            print(f"📁 좌표 파일: {coord_file}")
+            
+            # 파일 존재 확인
+            if not os.path.exists(pdf_template):
+                raise FileNotFoundError(f"PDF 템플릿 파일이 없습니다: {pdf_template}")
+            if not os.path.exists(coord_file):
+                raise FileNotFoundError(f"좌표 파일이 없습니다: {coord_file}")
+            
+            # 좌표 정보 로드
+            with open(coord_file, 'r', encoding='utf-8') as f:
+                coordinates = json.load(f)
+            
+            print(f"✅ 좌표 정보 로드됨: {len(coordinates)}개 필드")
+            
+            # PDF 템플릿 열기
+            doc = fitz.open(pdf_template)
+            page = doc[0]  # 첫 번째 페이지
+            
+            # 데이터를 좌표에 맞춰 삽입
+            for field_name, field_data in coordinates.items():
+                if field_name in data and data[field_name]:
+                    x = field_data["x"]
+                    y = field_data["y"]
+                    font_size = field_data.get("font_size", 9)
+                    text = str(data[field_name])
+                    
+                    print(f"📝 텍스트 삽입: {field_name} = '{text}' at ({x}, {y})")
+                    
+                    # vessel_flight 필드 특별 처리
+                    if field_name == "vessel_flight":
+                        font_size = 5
+                        # 텍스트를 8글자씩 3행으로 분할
+                        lines = self._split_text_into_lines(text, 8, 3)
+                        line_height = font_size * 1.2
+                        
+                        for i, line in enumerate(lines):
+                            current_y = y - (i * line_height)
+                            page.insert_text(
+                                point=(x, current_y),
+                                text=line,
+                                fontsize=font_size,
+                                fontname="helv"
+                            )
+                    else:
+                        # 일반 필드 처리
+                        page.insert_text(
+                            point=(x, y),
+                            text=text,
+                            fontsize=font_size,
+                            fontname="helv"
+                        )
+            
+            # 출력 디렉토리 생성
+            output_dir = os.path.dirname(output_path)
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # PDF 저장
+            doc.save(output_path)
+            doc.close()
+            
+            print(f"✅ PDF 생성 완료: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            print(f"❌ PDF 생성 오류: {str(e)}")
+            raise e
+    
+    def _split_text_into_lines(self, text, chars_per_line, max_lines):
+        """텍스트를 여러 줄로 분할"""
+        lines = []
+        for i in range(0, len(text), chars_per_line):
+            if len(lines) >= max_lines:
+                break
+            lines.append(text[i:i+chars_per_line])
+        return lines
     
     def _generate_commercial_invoice(self, country, product, company_info, **kwargs):
         """상업송장 생성"""
@@ -55,45 +157,28 @@ class SimpleDocumentGenerator:
             unit_price = float(product_info.get('unit_price', 0))
             total_amount = quantity * unit_price
             
-            # 문서 생성
-            lines = []
-            lines.append("=== 상업송장 (Commercial Invoice) ===")
-            lines.append("")
-            lines.append("📋 기본 정보")
-            lines.append(f"- 국가: {safe_str(country)}")
-            lines.append(f"- 제품명: {safe_str(product)}")
-            lines.append(f"- 발행일: {datetime.now().strftime('%Y-%m-%d')}")
-            lines.append("")
-            lines.append("🏢 판매자 정보")
-            lines.append(f"- 회사명: {safe_str(company_info.get('name'))}")
-            lines.append(f"- 주소: {safe_str(company_info.get('address'))}")
-            lines.append(f"- 연락처: {safe_str(company_info.get('phone'))}")
-            lines.append(f"- 이메일: {safe_str(company_info.get('email'))}")
-            lines.append("")
-            lines.append("👤 구매자 정보")
-            lines.append(f"- 회사명: {safe_str(buyer_info.get('name'))}")
-            lines.append(f"- 주소: {safe_str(buyer_info.get('address'))}")
-            lines.append(f"- 연락처: {safe_str(buyer_info.get('phone'))}")
-            lines.append("")
-            lines.append("📦 제품 정보")
-            lines.append(f"- 제품명: {safe_str(product_info.get('name', product))}")
-            lines.append(f"- 수량: {safe_str(product_info.get('quantity'))}")
-            lines.append(f"- 단가: {safe_str(product_info.get('unit_price'))}")
-            lines.append(f"- 총액: {safe_str(total_amount)}")
-            lines.append("")
-            lines.append("🚢 운송 정보")
-            lines.append(f"- 운송방법: {safe_str(transport_info.get('method'))}")
-            lines.append(f"- 출발지: {safe_str(transport_info.get('origin'))}")
-            lines.append(f"- 도착지: {safe_str(transport_info.get('destination'))}")
-            lines.append("")
-            lines.append("💳 결제 정보")
-            lines.append(f"- 결제방법: {safe_str(payment_info.get('method'))}")
-            lines.append(f"- 통화: {safe_str(payment_info.get('currency', 'USD'))}")
-            lines.append("")
-            lines.append("---")
-            lines.append("KATI 수출 지원 시스템에서 생성된 상업송장입니다.")
+            # PDF 데이터 준비 (좌표 파일의 필드명과 일치)
+            pdf_data = {
+                "shipper_seller": company_info.get("name", ""),
+                "invoice_no_date": f"INV-{datetime.now().strftime('%Y%m%d')}-001 / {datetime.now().strftime('%Y-%m-%d')}",
+                "lc_no_date": f"{payment_info.get('lc_number', '')} / {payment_info.get('lc_date', '')}",
+                "buyer": buyer_info.get("name", ""),
+                "other_references": payment_info.get("reference", ""),
+                "departure_date": transport_info.get("departure_date", ""),
+                "vessel_flight": transport_info.get("vessel_flight", ""),
+                "from_location": transport_info.get("from_location", ""),
+                "to_location": transport_info.get("to_location", ""),
+                "terms_delivery_payment": f"{transport_info.get('delivery_terms', '')} / {payment_info.get('payment_terms', '')}",
+                "shipping_marks": kwargs.get('packing_details', {}).get("shipping_marks", ""),
+                "package_count_type": f"{kwargs.get('packing_details', {}).get('package_count', '')} {kwargs.get('packing_details', {}).get('package_type', '')}",
+                "goods_description": product_info.get("description", ""),
+                "quantity": str(product_info.get("quantity", "")),
+                "unit_price": str(product_info.get("unit_price", "")),
+                "amount": str(total_amount),
+                "signed_by": company_info.get("representative", "")
+            }
             
-            return "\n".join(lines)
+            return pdf_data
             
         except Exception as e:
             print(f"❌ 상업송장 생성 오류: {str(e)}")
@@ -115,40 +200,28 @@ class SimpleDocumentGenerator:
                 except:
                     return 'N/A'
             
-            # 문서 생성
-            lines = []
-            lines.append("=== 포장명세서 (Packing List) ===")
-            lines.append("")
-            lines.append("📋 기본 정보")
-            lines.append(f"- 국가: {safe_str(country)}")
-            lines.append(f"- 제품명: {safe_str(product)}")
-            lines.append(f"- 발행일: {datetime.now().strftime('%Y-%m-%d')}")
-            lines.append("")
-            lines.append("🏢 발송자 정보")
-            lines.append(f"- 회사명: {safe_str(company_info.get('name'))}")
-            lines.append(f"- 주소: {safe_str(company_info.get('address'))}")
-            lines.append(f"- 연락처: {safe_str(company_info.get('phone'))}")
-            lines.append("")
-            lines.append("📦 포장 정보")
-            lines.append(f"- 포장 방법: {safe_str(packing_details.get('method'))}")
-            lines.append(f"- 포장 재질: {safe_str(packing_details.get('material', 'Carton'))}")
-            lines.append(f"- 포장 크기: {safe_str(packing_details.get('size', 'Standard'))}")
-            lines.append(f"- 포장 무게: {safe_str(packing_details.get('weight'))}")
-            lines.append("")
-            lines.append("📋 상세 명세")
-            lines.append(f"- 제품명: {safe_str(product_info.get('name', product))}")
-            lines.append(f"- 수량: {safe_str(product_info.get('quantity'))}")
-            lines.append(f"- 단위: {safe_str(product_info.get('unit', '개'))}")
-            lines.append(f"- 총 포장 수: {safe_str(packing_details.get('total_packages'))}")
-            lines.append("")
-            lines.append("📝 특이사항")
-            lines.append(f"- 취급 주의: {safe_str(packing_details.get('handling_notes'))}")
-            lines.append(f"- 보관 조건: {safe_str(packing_details.get('storage_conditions'))}")
-            lines.append("")
-            lines.append("---")
-            lines.append("KATI 수출 지원 시스템에서 생성된 포장명세서입니다.")
+            # PDF 데이터 준비 (좌표 파일의 필드명과 일치)
+            pdf_data = {
+                "seller": company_info.get("name", ""),
+                "consignee": kwargs.get('buyer_info', {}).get("name", ""),
+                "notify_party": kwargs.get('buyer_info', {}).get("notify_party", ""),
+                "departure_date": kwargs.get('transport_info', {}).get("departure_date", ""),
+                "vessel_flight": kwargs.get('transport_info', {}).get("vessel_flight", ""),
+                "from_location": kwargs.get('transport_info', {}).get("from_location", ""),
+                "to_location": kwargs.get('transport_info', {}).get("to_location", ""),
+                "invoice_no_date": f"INV-{datetime.now().strftime('%Y%m%d')}-001 / {datetime.now().strftime('%Y-%m-%d')}",
+                "buyer": kwargs.get('buyer_info', {}).get("name", ""),
+                "other_references": kwargs.get('payment_info', {}).get("reference", ""),
+                "shipping_marks": packing_details.get("shipping_marks", ""),
+                "package_count_type": f"{packing_details.get('package_count', '')} {packing_details.get('package_type', '')}",
+                "goods_description": product_info.get("description", ""),
+                "quantity_net_weight": f"{product_info.get('quantity', '')} / {packing_details.get('net_weight', '')}",
+                "gross_weight": str(packing_details.get("gross_weight", "")),
+                "measurement": packing_details.get("dimensions", ""),
+                "signed_by": company_info.get("representative", "")
+            }
             
-            return "\n".join(lines)
+            return pdf_data
             
         except Exception as e:
             print(f"❌ 포장명세서 생성 오류: {str(e)}")
@@ -161,7 +234,7 @@ doc_generator = SimpleDocumentGenerator()
 def index():
     """메인 페이지"""
     return jsonify({
-        'message': 'KATI 수출 지원 시스템 - 간단한 서류 생성 API',
+        'message': 'KATI 수출 지원 시스템 - 서류 생성 API (PDF 포함)',
         'status': 'running',
         'version': '1.0.0'
     })
@@ -177,7 +250,7 @@ def health_check():
 
 @app.route('/api/document-generation', methods=['POST'])
 def api_document_generation():
-    """간단한 서류 생성 API"""
+    """서류 생성 API (PDF 포함)"""
     print("🔍 서류생성 API 호출됨")
     
     try:
@@ -220,6 +293,8 @@ def api_document_generation():
         print("📄 서류 생성 시작...")
         
         documents = {}
+        pdf_files = {}
+        
         for doc_type in filtered_documents:
             try:
                 # 서류별 특화 데이터 준비
@@ -238,15 +313,27 @@ def api_document_generation():
                 print(f"  - payment_info: {payment_info}")
                 print(f"  - packing_details: {packing_details}")
                 
-                content = doc_generator.generate_document(
+                # PDF 데이터 생성
+                pdf_data = doc_generator.generate_document(
                     doc_type=doc_type,
                     country=country,
                     product=product_info.get('name', '라면'),
                     company_info=company_info,
                     **doc_data
                 )
-                documents[doc_type] = content
+                
+                # PDF 파일 생성
+                safe_name = doc_type.replace("/", "_").replace(" ", "_")
+                pdf_filename = f"{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                pdf_path = os.path.join("generated_documents", pdf_filename)
+                
+                # PDF 생성
+                doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
+                
+                documents[doc_type] = pdf_data
+                pdf_files[doc_type] = pdf_filename
                 print(f"✅ {doc_type} 생성 완료")
+                
             except Exception as e:
                 print(f"❌ {doc_type} 생성 실패: {str(e)}")
                 documents[doc_type] = f"❌ 서류 생성 실패: {str(e)}"
@@ -254,13 +341,23 @@ def api_document_generation():
         print(f"✅ 서류 생성 완료: {len(documents)}개")
         print(f"📄 생성된 서류: {list(documents.keys())}")
         
+        # PDF 다운로드 URL 생성
+        pdf_download_urls = {}
+        for doc_name, filename in pdf_files.items():
+            pdf_download_urls[doc_name] = f"/api/download-document/{filename}"
+        
         return jsonify({
             'success': True,
             'message': '서류 생성 완료',
             'documents': documents,
-            'generated_count': len(documents),
-            'generated_documents': list(documents.keys()),
-            'note': '배포 환경에서는 텍스트 형태로만 제공됩니다. PDF 변환은 로컬 환경에서 가능합니다.'
+            'pdf_files': pdf_files,
+            'download_urls': pdf_download_urls,
+            'generated_count': len(pdf_files),
+            'download_instructions': {
+                'method': 'GET',
+                'urls': pdf_download_urls,
+                'note': '각 URL을 브라우저에서 직접 접속하거나 JavaScript로 window.open() 사용'
+            }
         })
         
     except Exception as e:
@@ -269,17 +366,29 @@ def api_document_generation():
         print(f"📋 상세 오류: {traceback.format_exc()}")
         return jsonify({'error': f'서류 생성 실패: {str(e)}'})
 
+@app.route('/api/download-document/<filename>')
+def download_document(filename):
+    """PDF 파일 다운로드"""
+    try:
+        file_path = os.path.join("generated_documents", filename)
+        if os.path.exists(file_path):
+            return send_file(file_path, as_attachment=True, download_name=filename)
+        else:
+            return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+    except Exception as e:
+        return jsonify({'error': f'파일 다운로드 실패: {str(e)}'}), 500
+
 @app.route('/api/system-status')
 def api_system_status():
     """시스템 상태 확인"""
     return jsonify({
         'status': 'operational',
-        'service': 'KATI Simple Document Generator',
+        'service': 'KATI Document Generator (PDF 포함)',
         'version': '1.0.0',
         'environment': 'production',
         'features': {
             'document_generation': True,
-            'pdf_generation': False,  # 배포 환경에서는 비활성화
+            'pdf_generation': True,  # PDF 생성 활성화
             'ocr_processing': False,
             'ai_services': False
         },
@@ -288,11 +397,11 @@ def api_system_status():
     })
 
 if __name__ == '__main__':
-    print("🚀 KATI 간단한 서류 생성 API 시작")
+    print("🚀 KATI 서류 생성 API 시작 (PDF 포함)")
     print("📋 지원 기능:")
-    print("  - 상업송장 생성")
-    print("  - 포장명세서 생성")
-    print("  - 텍스트 형태 출력")
+    print("  - 상업송장 생성 (PDF)")
+    print("  - 포장명세서 생성 (PDF)")
+    print("  - 좌표 기반 PDF 생성")
     print("  - 배포 환경 최적화")
     
     # 포트 설정 (환경 변수에서 가져오거나 기본값 사용)
