@@ -814,18 +814,19 @@ class WebMVPSystem:
             "영양성분분석서 (100g당 기준)"
         ]
         
-        # 핵심 서류 부족 체크
+        # 핵심 서류 부족 체크 (체크된 항목은 제외)
         missing_core_docs = []
         for doc in core_required_docs:
             if doc not in prepared_documents:
                 missing_core_docs.append(doc)
         
-        # 권장 서류 부족 체크
+        # 권장 서류 부족 체크 (체크된 항목은 제외)
         missing_recommended_docs = []
         for doc in recommended_docs:
             if doc not in prepared_documents:
                 missing_recommended_docs.append(doc)
         
+        # 체크되지 않은 서류만 이슈로 추가
         if missing_core_docs:
             analysis["missing_requirements"].extend(missing_core_docs)
             analysis["critical_issues"].append(f"핵심 서류 부족: {', '.join(missing_core_docs)}")
@@ -834,8 +835,9 @@ class WebMVPSystem:
             analysis["missing_requirements"].extend(missing_recommended_docs)
             analysis["minor_issues"].append(f"권장 서류 부족: {', '.join(missing_recommended_docs)}")
         
-        # 2. 라벨링 요구사항 검사
+        # 2. 라벨링 요구사항 검사 (체크박스 상태에 따라)
         if country == "중국":
+            # 체크된 항목은 이슈에서 제외
             if not labeling_info.get("has_nutrition_label"):
                 analysis["critical_issues"].append("중국 GB 7718-2025: 영양성분표 필수")
             if not labeling_info.get("has_allergy_info"):
@@ -850,6 +852,7 @@ class WebMVPSystem:
                 analysis["critical_issues"].append("중국 GB 7718-2025: 제조사 정보 필수")
         
         elif country == "미국":
+            # 체크된 항목은 이슈에서 제외
             if not labeling_info.get("has_nutrition_label"):
                 analysis["critical_issues"].append("미국 FDA: 영양성분표 필수")
             if not labeling_info.get("has_allergy_info"):
@@ -5153,6 +5156,13 @@ def generate_label(country, merged_product_info, ocr_info):
         print(f"📋 제품 정보: {merged_product_info}")
         print(f"📷 OCR 정보: {ocr_info}")
         
+        # 입력 데이터 검증
+        if not merged_product_info:
+            return {'error': '제품 정보가 필요합니다.', 'success': False}
+        
+        if not merged_product_info.get('name'):
+            return {'error': '제품명이 필요합니다.', 'success': False}
+        
         # 국가별 라벨 생성 로직 확인
         if country == "중국":
             print("🇨🇳 중국 라벨 생성 모드")
@@ -5164,6 +5174,8 @@ def generate_label(country, merged_product_info, ocr_info):
         # 간단한 테스트용 라벨 생성 (AdvancedLabelGenerator 대신)
         try:
             image = create_simple_test_label(country, merged_product_info)
+            if image is None:
+                raise Exception("라벨 이미지 생성 실패")
             print("✅ 간단한 테스트 라벨 생성 성공")
             label_type = f"{country}_test"
         except Exception as e:
@@ -5179,7 +5191,7 @@ def generate_label(country, merged_product_info, ocr_info):
                     image = label_generator.generate_us_2025_label(merged_product_info)
                     label_type = "us_2025"
                 else:
-                    return jsonify({'error': f'지원하지 않는 국가입니다: {country}'})
+                    return {'error': f'지원하지 않는 국가입니다: {country}', 'success': False}
                 print("✅ AdvancedLabelGenerator로 라벨 생성 성공")
             except Exception as e2:
                 print(f"❌ AdvancedLabelGenerator도 실패: {str(e2)}")
@@ -5195,7 +5207,7 @@ def generate_label(country, merged_product_info, ocr_info):
                     print("✅ 기본 라벨 생성기로 라벨 생성 성공")
                 except Exception as e3:
                     print(f"❌ 모든 라벨 생성기 실패: {str(e3)}")
-                    return jsonify({'error': f'라벨 생성 실패: {str(e)}'})
+                    return {'error': f'라벨 생성 실패: {str(e)}', 'success': False}
         
         # 이미지 저장 (배포 환경 권한 문제 해결)
         try:
@@ -5318,13 +5330,13 @@ def generate_label(country, merged_product_info, ocr_info):
                 'ocr_used': False
             }
         
-        return jsonify(response_data)
+        return response_data
         
     except Exception as e:
         print(f"❌ 라벨 생성 전체 오류: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'error': f'라벨 생성 중 오류가 발생했습니다: {str(e)}'})
+        return {'error': f'라벨 생성 중 오류가 발생했습니다: {str(e)}', 'success': False}
 
 def translate_allergies(allergies, country):
     """알레르기 정보를 해당 국가 언어로 번역"""
@@ -5378,6 +5390,15 @@ def create_simple_test_label(country, product_info):
     try:
         from PIL import Image, ImageDraw, ImageFont
         
+        # 입력 데이터 검증
+        if not product_info:
+            print("❌ 제품 정보가 없습니다.")
+            return None
+        
+        if not product_info.get('name'):
+            print("❌ 제품명이 없습니다.")
+            return None
+        
         # 이미지 생성 (더 큰 크기로)
         width, height = 800, 1000
         image = Image.new('RGB', (width, height), (255, 255, 255))
@@ -5390,53 +5411,46 @@ def create_simple_test_label(country, product_info):
         # 국가별 폰트 경로 (우선순위 순) - 개선된 버전
         if country == "중국":
             font_paths = [
-                # 오픈소스 폰트 (배포 환경 우선)
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux Noto CJK
-                "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.otf",   # Linux Noto Sans SC
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-SC-Regular.otf", # Linux Noto Sans CJK SC
-                # 프로젝트 내 폰트 폴더
+                # 프로젝트 내 폰트 폴더 (우선)
                 "fonts/msyh.ttc",                    # Microsoft YaHei (중국어, 영어, 한글)
                 "fonts/simsun.ttc",                  # SimSun (중국어, 영어)
-                "fonts/simhei.ttf",                  # SimHei (중국어)
                 "fonts/malgun.ttf",                  # 맑은 고딕 (한글)
-                # Linux 시스템 폰트 (배포 환경용)
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",         # Linux DejaVu
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Linux Liberation
-                # macOS 시스템 폰트
-                "/System/Library/Fonts/PingFang.ttc",  # macOS PingFang
-                "/System/Library/Fonts/Helvetica.ttc",  # macOS Helvetica
                 # Windows 폰트 경로 (로컬 환경용)
                 "C:/Windows/Fonts/msyh.ttc",        # Microsoft YaHei (중국어, 영어, 한글)
                 "C:/Windows/Fonts/simsun.ttc",      # SimSun (중국어, 영어)
                 "C:/Windows/Fonts/msyhbd.ttc",      # Microsoft YaHei Bold
                 "C:/Windows/Fonts/simhei.ttf",      # SimHei (중국어)
-                "C:/Windows/Fonts/simkai.ttf",      # SimKai (중국어)
-                "C:/Windows/Fonts/simfang.ttf",     # SimFang (중국어)
                 "C:/Windows/Fonts/malgun.ttf",      # 맑은 고딕 (한글)
-                "C:/Windows/Fonts/gulim.ttc",       # 굴림 (한글)
                 "C:/Windows/Fonts/arial.ttf",       # Arial (영어)
                 # 상대 경로 폰트 (현재 디렉토리)
                 "msyh.ttc",
                 "simsun.ttc",
-                "simhei.ttf",
                 "malgun.ttf"
             ]
         else:  # 미국
             font_paths = [
+                # 프로젝트 내 폰트 폴더 (우선)
+                "fonts/arial.ttf",                   # Arial (영어)
+                "fonts/msyh.ttc",                    # Microsoft YaHei (다국어)
+                "fonts/malgun.ttf",                  # 맑은 고딕 (한글)
+                # Windows 폰트 경로 (로컬 환경용)
                 "C:/Windows/Fonts/arial.ttf",       # Arial (영어)
                 "C:/Windows/Fonts/calibri.ttf",     # Calibri (영어)
                 "C:/Windows/Fonts/msyh.ttc",        # Microsoft YaHei (다국어)
                 "C:/Windows/Fonts/malgun.ttf",      # 맑은 고딕 (한글)
+                # 상대 경로 폰트 (현재 디렉토리)
                 "arial.ttf",
-                "calibri.ttf",
                 "msyh.ttc"
             ]
         
         for font_path in font_paths:
             try:
-                font = ImageFont.truetype(font_path, font_size)
-                print(f"✅ 폰트 로드 성공: {font_path}")
-                break
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, font_size)
+                    print(f"✅ 폰트 로드 성공: {font_path}")
+                    break
+                else:
+                    print(f"⚠️ 폰트 파일 없음: {font_path}")
             except Exception as font_error:
                 print(f"❌ 폰트 로드 실패: {font_path} - {font_error}")
                 continue
@@ -5448,13 +5462,13 @@ def create_simple_test_label(country, product_info):
                 print("✅ 기본 폰트 로드 성공")
             except Exception as default_font_error:
                 print(f"❌ 기본 폰트도 실패: {default_font_error}")
-                # 배포 환경용 최종 폴백: 텍스트만 생성
+                # 최종 폴백: 텍스트만 생성
                 print("⚠️ 폰트 로드 완전 실패, 텍스트만 반환")
                 
                 # 중국어 라벨의 경우 텍스트 내용을 중국어로 생성
                 if country == "중국":
                     label_text = f"""中国어 영양성분표 (폰트 로드 실패)
-제품명: {product_info.get('product_name', 'N/A')}
+제품명: {product_info.get('name', 'N/A')}
 제조사: {product_info.get('manufacturer', 'N/A')}
 원산지: 韩国制造 (한국산)
 영양성분표 (每100g):
@@ -5470,7 +5484,7 @@ def create_simple_test_label(country, product_info):
                 else:
                     label_text = f"라벨 생성 완료 (폰트 로드 실패: {default_font_error})"
                 
-                return jsonify({
+                return {
                     'success': True,
                     'label_data': {
                         'text_content': label_text,
@@ -5486,7 +5500,7 @@ def create_simple_test_label(country, product_info):
                         'ocr_data': {},
                         'ocr_used': False
                     }
-                })
+                }
         
         def safe_draw_text(draw, position, text, font, fill):
             """안전한 텍스트 그리기 (중국어 지원 강화)"""
@@ -5641,9 +5655,10 @@ def create_simple_test_label(country, product_info):
             fallback_draw.text((50, 50), f"Label Generation Failed for {country}", fill=(0, 0, 0))
             fallback_draw.text((50, 100), f"Error: {str(e)}", fill=(255, 0, 0))
             return fallback_image
-        except:
-            # 최종 폴백
-            return Image.new('RGB', (800, 1000), (255, 255, 255))
+        except Exception as fallback_error:
+            print(f"❌ 폴백 이미지 생성도 실패: {fallback_error}")
+            # 최종 폴백: None 반환하여 상위 함수에서 처리하도록 함
+            return None
 
 def merge_ocr_and_user_input(user_input: dict, ocr_extracted: dict) -> dict:
     """OCR 추출 정보와 사용자 입력 정보를 통합 (OR 조건 - 사용자 입력 우선)"""
@@ -5892,7 +5907,7 @@ def api_nutrition_label():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'JSON 데이터가 필요합니다.'})
+            return jsonify({'error': 'JSON 데이터가 필요합니다.', 'success': False})
         
         country = data.get('country', '중국')
         product_info = data.get('product_info', {})
@@ -5900,18 +5915,42 @@ def api_nutrition_label():
         print(f"🌍 국가: {country}")
         print(f"📦 제품 정보: {product_info}")
         
-        # 라벨 생성 (OCR 없이 직접 생성)
-        label_result = generate_label(country, product_info, {})
+        # 입력 데이터 검증
+        if not product_info:
+            return jsonify({'error': '제품 정보가 필요합니다.', 'success': False})
         
-        return jsonify({
-            'success': True,
-            'label_result': label_result,
-            'product_info': product_info,
-            'country': country
-        })
+        if not product_info.get('name'):
+            return jsonify({'error': '제품명이 필요합니다.', 'success': False})
+        
+        # 라벨 생성 (OCR 없이 직접 생성)
+        try:
+            label_result = generate_label(country, product_info, {})
+            
+            # label_result가 이미 JSON 응답인 경우
+            if isinstance(label_result, dict) and 'success' in label_result:
+                return jsonify(label_result)
+            
+            # label_result가 이미지 객체인 경우 (이전 버전 호환성)
+            return jsonify({
+                'success': True,
+                'label_data': label_result,
+                'product_info': product_info,
+                'country': country
+            })
+            
+        except Exception as label_error:
+            print(f"❌ 라벨 생성 중 오류: {str(label_error)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'error': f'라벨 생성 중 오류가 발생했습니다: {str(label_error)}',
+                'success': False
+            })
         
     except Exception as e:
         print(f"❌ 영양성분표 생성 API 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'error': f'영양성분표 생성 중 오류가 발생했습니다: {str(e)}',
             'success': False
