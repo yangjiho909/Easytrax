@@ -13,6 +13,9 @@ from datetime import datetime
 import os
 import json
 import traceback
+import tempfile
+import shutil
+import platform
 
 app = Flask(__name__)
 
@@ -26,19 +29,78 @@ except ImportError as e:
     print(f"⚠️ PyMuPDF 로드 실패: {e}")
     print("📝 텍스트 형태로만 서류 생성")
 
+# 배포 환경에서 안정적인 파일 저장을 위한 설정
+def ensure_generated_documents_dir():
+    """generated_documents 폴더가 존재하는지 확인하고 없으면 생성"""
+    try:
+        # 현재 작업 디렉토리 기준으로 폴더 생성 시도
+        current_dir = os.getcwd()
+        print(f"📁 현재 작업 디렉토리: {current_dir}")
+        
+        docs_dir = os.path.join(current_dir, "generated_documents")
+        print(f"📁 생성 시도할 폴더: {docs_dir}")
+        
+        # 폴더 생성
+        os.makedirs(docs_dir, exist_ok=True)
+        
+        # 폴더 권한 확인
+        if os.access(docs_dir, os.W_OK):
+            print(f"✅ generated_documents 폴더 생성/확인 완료: {docs_dir}")
+            print(f"📋 폴더 쓰기 권한: OK")
+            return docs_dir
+        else:
+            print(f"⚠️ 폴더 쓰기 권한 없음: {docs_dir}")
+            raise PermissionError(f"폴더 쓰기 권한 없음: {docs_dir}")
+            
+    except Exception as e:
+        print(f"⚠️ 기본 폴더 생성 실패: {e}")
+        try:
+            # 임시 디렉토리 사용
+            temp_dir = tempfile.gettempdir()
+            print(f"📁 시스템 임시 디렉토리: {temp_dir}")
+            
+            docs_dir = os.path.join(temp_dir, "kati_generated_documents")
+            print(f"📁 임시 폴더 경로: {docs_dir}")
+            
+            os.makedirs(docs_dir, exist_ok=True)
+            
+            if os.access(docs_dir, os.W_OK):
+                print(f"✅ 임시 폴더 사용: {docs_dir}")
+                print(f"📋 임시 폴더 쓰기 권한: OK")
+                return docs_dir
+            else:
+                print(f"⚠️ 임시 폴더 쓰기 권한 없음: {docs_dir}")
+                raise PermissionError(f"임시 폴더 쓰기 권한 없음: {docs_dir}")
+                
+        except Exception as e2:
+            print(f"❌ 임시 폴더도 생성 실패: {e2}")
+            # 마지막 수단: 현재 디렉토리 사용
+            docs_dir = "generated_documents"
+            print(f"⚠️ 현재 디렉토리 사용: {docs_dir}")
+            return docs_dir
+
+# 전역 변수로 폴더 경로 저장
+GENERATED_DOCS_DIR = ensure_generated_documents_dir()
+print(f"🎯 최종 사용 폴더: {GENERATED_DOCS_DIR}")
+
 class SimpleDocumentGenerator:
     """간단한 서류 생성기 (PDF 포함)"""
     
     def __init__(self):
         print("✅ SimpleDocumentGenerator 초기화 완료")
+        
+        # 절대 경로로 템플릿 파일 설정
+        current_dir = os.getcwd()
+        print(f"📁 현재 디렉토리: {current_dir}")
+        
         self.template_files = {
-            "상업송장": {
-                "pdf": "uploaded_templates/상업송장 빈 템플릿.pdf",
-                "coordinates": "uploaded_templates/상업송장 좌표 반영.json"
+            "commercial_invoice": {  # 영문으로 변경
+                "pdf": os.path.join(current_dir, "uploaded_templates", "상업송장 빈 템플릿.pdf"),
+                "coordinates": os.path.join(current_dir, "uploaded_templates", "상업송장 좌표 반영.json")
             },
-            "포장명세서": {
-                "pdf": "uploaded_templates/포장명세서 빈 템플릿.pdf", 
-                "coordinates": "uploaded_templates/포장명세서 좌표 반영.json"
+            "packing_list": {  # 영문으로 변경
+                "pdf": os.path.join(current_dir, "uploaded_templates", "포장명세서 빈 템플릿.pdf"), 
+                "coordinates": os.path.join(current_dir, "uploaded_templates", "포장명세서 좌표 반영.json")
             }
         }
         
@@ -51,7 +113,7 @@ class SimpleDocumentGenerator:
         for doc_type, files in self.template_files.items():
             pdf_exists = os.path.exists(files["pdf"])
             coord_exists = os.path.exists(files["coordinates"])
-            print(f"📄 {doc_type}: PDF={pdf_exists}, 좌표={coord_exists}")
+            print(f"📄 {doc_type}: PDF={pdf_exists} ({files['pdf']}), 좌표={coord_exists} ({files['coordinates']})")
             
             if not pdf_exists or not coord_exists:
                 print(f"⚠️ {doc_type} 템플릿 파일 누락")
@@ -59,9 +121,18 @@ class SimpleDocumentGenerator:
     def generate_document(self, doc_type, country, product, company_info, **kwargs):
         """문서 생성 메인 함수"""
         try:
-            if doc_type == "상업송장":
+            # 한글 문서 타입을 영문으로 매핑
+            doc_type_mapping = {
+                "상업송장": "commercial_invoice",
+                "포장명세서": "packing_list"
+            }
+            
+            english_doc_type = doc_type_mapping.get(doc_type, doc_type)
+            print(f"📋 문서 타입 변환: {doc_type} -> {english_doc_type}")
+            
+            if english_doc_type == "commercial_invoice":
                 return self._generate_commercial_invoice(country, product, company_info, **kwargs)
-            elif doc_type == "포장명세서":
+            elif english_doc_type == "packing_list":
                 return self._generate_packing_list(country, product, company_info, **kwargs)
             else:
                 return f"지원하지 않는 문서 유형: {doc_type}"
@@ -71,18 +142,31 @@ class SimpleDocumentGenerator:
     
     def generate_pdf_with_coordinates(self, doc_type, data, output_path):
         """좌표 기반 PDF 생성 (폴백 기능 포함)"""
+        print(f"🚀 PDF 생성 시작: {doc_type}")
+        print(f"📁 출력 경로: {output_path}")
+        print(f"📋 데이터 키: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
+        
         if not PDF_AVAILABLE:
             print("❌ PDF 생성 불가: PyMuPDF 없음")
             return self._generate_text_fallback(doc_type, data, output_path)
         
         try:
-            print(f"📄 PDF 생성 시작: {doc_type}")
+            # 한글 문서 타입을 영문으로 매핑
+            doc_type_mapping = {
+                "상업송장": "commercial_invoice",
+                "포장명세서": "packing_list"
+            }
+            english_doc_type = doc_type_mapping.get(doc_type, doc_type)
+            
+            print(f"📄 PDF 생성 시작: {doc_type} -> {english_doc_type}")
             print(f"📁 출력 경로: {output_path}")
             
             # 템플릿 파일 경로 확인
-            template_info = self.template_files.get(doc_type)
+            template_info = self.template_files.get(english_doc_type)
             if not template_info:
-                raise ValueError(f"템플릿 정보를 찾을 수 없습니다: {doc_type}")
+                print(f"❌ 템플릿 정보를 찾을 수 없습니다: {english_doc_type}")
+                print(f"📋 사용 가능한 템플릿: {list(self.template_files.keys())}")
+                return self._generate_text_fallback(doc_type, data, output_path)
             
             pdf_template = template_info["pdf"]
             coord_file = template_info["coordinates"]
@@ -99,16 +183,20 @@ class SimpleDocumentGenerator:
                 return self._generate_text_fallback(doc_type, data, output_path)
             
             # 좌표 정보 로드
+            print(f"📖 좌표 파일 읽기 시작: {coord_file}")
             with open(coord_file, 'r', encoding='utf-8') as f:
                 coordinates = json.load(f)
             
             print(f"✅ 좌표 정보 로드됨: {len(coordinates)}개 필드")
             
             # PDF 템플릿 열기
+            print(f"📄 PDF 템플릿 열기: {pdf_template}")
             doc = fitz.open(pdf_template)
             page = doc[0]  # 첫 번째 페이지
+            print(f"✅ PDF 템플릿 열기 성공")
             
             # 데이터를 좌표에 맞춰 삽입
+            inserted_count = 0
             for field_name, field_data in coordinates.items():
                 if field_name in data and data[field_name]:
                     x = field_data["x"]
@@ -141,6 +229,9 @@ class SimpleDocumentGenerator:
                             fontsize=font_size,
                             fontname="helv"
                         )
+                    inserted_count += 1
+            
+            print(f"✅ 텍스트 삽입 완료: {inserted_count}개 필드")
             
             # 출력 디렉토리 생성 (전역 변수 사용)
             output_dir = os.path.dirname(output_path)
@@ -148,13 +239,32 @@ class SimpleDocumentGenerator:
             os.makedirs(output_dir, exist_ok=True)
             print(f"✅ 출력 디렉토리 확인: {output_dir}")
             
+            # 디렉토리 쓰기 권한 확인
+            if not os.access(output_dir, os.W_OK):
+                print(f"❌ 출력 디렉토리 쓰기 권한 없음: {output_dir}")
+                return self._generate_text_fallback(doc_type, data, output_path)
+            
             # PDF 저장
+            print(f"💾 PDF 저장 시작: {output_path}")
             doc.save(output_path)
             doc.close()
             
-            print(f"✅ PDF 생성 완료: {output_path}")
-            print(f"📄 파일 크기: {os.path.getsize(output_path)} bytes")
-            return output_path
+            # 파일 생성 확인
+            if os.path.exists(output_path):
+                file_size = os.path.getsize(output_path)
+                print(f"✅ PDF 생성 완료: {output_path}")
+                print(f"📄 파일 크기: {file_size} bytes")
+                
+                # 파일 읽기 권한 확인
+                if os.access(output_path, os.R_OK):
+                    print(f"✅ 파일 읽기 권한: OK")
+                    return output_path
+                else:
+                    print(f"❌ 파일 읽기 권한 없음: {output_path}")
+                    return self._generate_text_fallback(doc_type, data, output_path)
+            else:
+                print(f"❌ PDF 파일이 생성되지 않음: {output_path}")
+                return self._generate_text_fallback(doc_type, data, output_path)
             
         except Exception as e:
             print(f"❌ PDF 생성 오류: {str(e)}")
@@ -186,13 +296,31 @@ class SimpleDocumentGenerator:
             print(f"📁 텍스트 파일 출력 디렉토리: {output_dir}")
             os.makedirs(output_dir, exist_ok=True)
             
+            # 디렉토리 쓰기 권한 확인
+            if not os.access(output_dir, os.W_OK):
+                print(f"❌ 텍스트 파일 디렉토리 쓰기 권한 없음: {output_dir}")
+                return None
+            
             # 텍스트 파일 저장
             with open(text_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(lines))
             
-            print(f"✅ 텍스트 파일 생성 완료: {text_path}")
-            print(f"📄 텍스트 파일 크기: {os.path.getsize(text_path)} bytes")
-            return text_path
+            # 파일 생성 확인
+            if os.path.exists(text_path):
+                file_size = os.path.getsize(text_path)
+                print(f"✅ 텍스트 파일 생성 완료: {text_path}")
+                print(f"📄 텍스트 파일 크기: {file_size} bytes")
+                
+                # 파일 읽기 권한 확인
+                if os.access(text_path, os.R_OK):
+                    print(f"✅ 텍스트 파일 읽기 권한: OK")
+                    return text_path
+                else:
+                    print(f"❌ 텍스트 파일 읽기 권한 없음: {text_path}")
+                    return None
+            else:
+                print(f"❌ 텍스트 파일이 생성되지 않음: {text_path}")
+                return None
             
         except Exception as e:
             print(f"❌ 텍스트 폴백도 실패: {str(e)}")
@@ -304,38 +432,6 @@ class SimpleDocumentGenerator:
 # 전역 변수로 생성기 인스턴스 생성
 doc_generator = SimpleDocumentGenerator()
 
-# 배포 환경에서 안정적인 파일 저장을 위한 설정
-import tempfile
-import shutil
-
-# 임시 디렉토리 또는 현재 디렉토리에 generated_documents 폴더 생성
-def ensure_generated_documents_dir():
-    """generated_documents 폴더가 존재하는지 확인하고 없으면 생성"""
-    try:
-        # 현재 작업 디렉토리 기준으로 폴더 생성 시도
-        docs_dir = os.path.join(os.getcwd(), "generated_documents")
-        os.makedirs(docs_dir, exist_ok=True)
-        print(f"✅ generated_documents 폴더 확인/생성: {docs_dir}")
-        return docs_dir
-    except Exception as e:
-        print(f"⚠️ 기본 폴더 생성 실패: {e}")
-        try:
-            # 임시 디렉토리 사용
-            temp_dir = tempfile.gettempdir()
-            docs_dir = os.path.join(temp_dir, "kati_generated_documents")
-            os.makedirs(docs_dir, exist_ok=True)
-            print(f"✅ 임시 폴더 사용: {docs_dir}")
-            return docs_dir
-        except Exception as e2:
-            print(f"❌ 임시 폴더도 생성 실패: {e2}")
-            # 마지막 수단: 현재 디렉토리 사용
-            docs_dir = "generated_documents"
-            print(f"⚠️ 현재 디렉토리 사용: {docs_dir}")
-            return docs_dir
-
-# 전역 변수로 폴더 경로 저장
-GENERATED_DOCS_DIR = ensure_generated_documents_dir()
-
 @app.route('/')
 def index():
     """메인 페이지"""
@@ -343,7 +439,8 @@ def index():
         'message': 'KATI 수출 지원 시스템 - 서류 생성 API (PDF 포함)',
         'status': 'running',
         'version': '1.0.0',
-        'pdf_available': PDF_AVAILABLE
+        'pdf_available': PDF_AVAILABLE,
+        'generated_docs_dir': GENERATED_DOCS_DIR
     })
 
 @app.route('/api/health')
@@ -353,7 +450,10 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'service': 'KATI Document Generator',
-        'pdf_available': PDF_AVAILABLE
+        'pdf_available': PDF_AVAILABLE,
+        'generated_docs_dir': GENERATED_DOCS_DIR,
+        'platform': platform.system(),
+        'python_version': platform.python_version()
     })
 
 @app.route('/api/document-generation', methods=['POST'])
@@ -430,10 +530,20 @@ def api_document_generation():
                     **doc_data
                 )
                 
-                # PDF 파일 생성
-                safe_name = doc_type.replace("/", "_").replace(" ", "_")
-                pdf_filename = f"{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                pdf_path = os.path.join(GENERATED_DOCS_DIR, pdf_filename)
+                # 영문 파일명 생성 (한글 및 특수문자 제거)
+                doc_type_mapping = {
+                    "상업송장": "commercial_invoice",
+                    "포장명세서": "packing_list"
+                }
+                english_doc_type = doc_type_mapping.get(doc_type, doc_type)
+                
+                # 안전한 파일명 생성
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                safe_filename = f"{english_doc_type}_{timestamp}.pdf"
+                pdf_path = os.path.join(GENERATED_DOCS_DIR, safe_filename)
+                
+                print(f"📁 생성할 파일 경로: {pdf_path}")
+                print(f"📁 절대 경로: {os.path.abspath(pdf_path)}")
                 
                 # PDF 생성 (폴백 기능 포함)
                 generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
@@ -447,10 +557,10 @@ def api_document_generation():
                         documents[doc_type] = f"텍스트 파일로 생성됨: {actual_filename}"
                     else:
                         # PDF 파일인 경우
-                        pdf_files[doc_type] = pdf_filename
+                        pdf_files[doc_type] = safe_filename
                         documents[doc_type] = pdf_data
                     
-                    print(f"✅ {doc_type} 생성 완료")
+                    print(f"✅ {doc_type} 생성 완료: {generated_file}")
                 else:
                     print(f"❌ {doc_type} 생성 실패")
                     documents[doc_type] = f"❌ 서류 생성 실패"
@@ -475,6 +585,7 @@ def api_document_generation():
             'download_urls': download_urls,
             'generated_count': len(pdf_files),
             'pdf_available': PDF_AVAILABLE,
+            'generated_docs_dir': GENERATED_DOCS_DIR,
             'download_instructions': {
                 'method': 'GET',
                 'urls': download_urls,
@@ -492,30 +603,59 @@ def download_document(filename):
     """파일 다운로드 (PDF 또는 텍스트)"""
     try:
         file_path = os.path.join(GENERATED_DOCS_DIR, filename)
+        abs_file_path = os.path.abspath(file_path)
+        
         print(f"🔍 파일 다운로드 요청: {filename}")
-        print(f"📁 전체 경로: {file_path}")
+        print(f"📁 상대 경로: {file_path}")
+        print(f"📁 절대 경로: {abs_file_path}")
         print(f"📁 폴더 존재: {os.path.exists(GENERATED_DOCS_DIR)}")
         print(f"📄 파일 존재: {os.path.exists(file_path)}")
+        print(f"📄 절대 경로 파일 존재: {os.path.exists(abs_file_path)}")
         
         # 폴더 내용 확인
         if os.path.exists(GENERATED_DOCS_DIR):
-            files_in_dir = os.listdir(GENERATED_DOCS_DIR)
-            print(f"📋 폴더 내 파일들: {files_in_dir}")
+            try:
+                files_in_dir = os.listdir(GENERATED_DOCS_DIR)
+                print(f"📋 폴더 내 파일들: {files_in_dir}")
+            except Exception as e:
+                print(f"❌ 폴더 내용 읽기 실패: {e}")
         
+        # 파일 존재 확인 (여러 경로 시도)
+        target_path = None
         if os.path.exists(file_path):
-            print(f"✅ 파일 발견, 다운로드 시작: {file_path}")
-            return send_file(file_path, as_attachment=True, download_name=filename)
+            target_path = file_path
+            print(f"✅ 상대 경로로 파일 발견: {file_path}")
+        elif os.path.exists(abs_file_path):
+            target_path = abs_file_path
+            print(f"✅ 절대 경로로 파일 발견: {abs_file_path}")
         else:
-            print(f"❌ 파일을 찾을 수 없음: {file_path}")
+            print(f"❌ 파일을 찾을 수 없음")
+            print(f"  - 상대 경로: {file_path}")
+            print(f"  - 절대 경로: {abs_file_path}")
             return jsonify({
                 'error': '파일을 찾을 수 없습니다.',
                 'filename': filename,
                 'file_path': file_path,
+                'abs_file_path': abs_file_path,
                 'folder_exists': os.path.exists(GENERATED_DOCS_DIR),
                 'folder_path': GENERATED_DOCS_DIR
             }), 404
+        
+        # 파일 읽기 권한 확인
+        if not os.access(target_path, os.R_OK):
+            print(f"❌ 파일 읽기 권한 없음: {target_path}")
+            return jsonify({
+                'error': '파일 읽기 권한이 없습니다.',
+                'filename': filename,
+                'file_path': target_path
+            }), 403
+        
+        print(f"✅ 파일 발견, 다운로드 시작: {target_path}")
+        return send_file(target_path, as_attachment=True, download_name=filename)
+        
     except Exception as e:
         print(f"❌ 파일 다운로드 오류: {str(e)}")
+        print(f"📋 상세 오류: {traceback.format_exc()}")
         return jsonify({
             'error': f'파일 다운로드 실패: {str(e)}',
             'filename': filename,
@@ -538,6 +678,9 @@ def api_system_status():
         },
         'supported_documents': ['상업송장', '포장명세서'],
         'pdf_available': PDF_AVAILABLE,
+        'generated_docs_dir': GENERATED_DOCS_DIR,
+        'platform': platform.system(),
+        'python_version': platform.python_version(),
         'timestamp': datetime.now().isoformat()
     })
 
@@ -549,6 +692,9 @@ if __name__ == '__main__':
     print("  - 좌표 기반 PDF 생성")
     print("  - 배포 환경 최적화")
     print(f"  - PDF 사용 가능: {PDF_AVAILABLE}")
+    print(f"  - 생성 폴더: {GENERATED_DOCS_DIR}")
+    print(f"  - 플랫폼: {platform.system()}")
+    print(f"  - Python 버전: {platform.python_version()}")
     
     # 포트 설정 (환경 변수에서 가져오거나 기본값 사용)
     port = int(os.environ.get('PORT', 5000))
