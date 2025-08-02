@@ -176,24 +176,55 @@ class DeploymentFileManager:
     def get_file_content(self, filename: str) -> Optional[bytes]:
         """파일 내용 가져오기"""
         try:
+            # 1. 메모리 캐시에서 먼저 확인
             if filename in self.file_cache:
-                # 메모리 캐시에서 가져오기
+                print(f"📦 메모리 캐시에서 파일 발견: {filename}")
                 cache_entry = self.file_cache[filename]
                 if cache_entry['type'] == 'pdf':
                     return cache_entry['content']
                 else:
                     return cache_entry['content'].encode('utf-8')
             
-            # 파일 시스템에서 가져오기
+            # 2. 여러 경로에서 파일 검색
+            possible_paths = []
+            
+            # 클라우드 환경
             if self.is_cloud:
-                file_path = os.path.join(self.temp_dir, filename)
-            else:
-                file_path = os.path.join("generated_documents", filename)
+                possible_paths.append(os.path.join(self.temp_dir, filename))
             
-            if os.path.exists(file_path):
-                with open(file_path, 'rb') as f:
-                    return f.read()
+            # 로컬 환경
+            possible_paths.extend([
+                os.path.join("generated_documents", filename),
+                os.path.join("temp_uploads", filename),
+                os.path.join("uploaded_documents", filename),
+                filename  # 현재 디렉토리
+            ])
             
+            # 각 경로에서 파일 확인
+            for file_path in possible_paths:
+                if os.path.exists(file_path):
+                    print(f"📁 파일 발견: {file_path}")
+                    try:
+                        with open(file_path, 'rb') as f:
+                            content = f.read()
+                        
+                        # 메모리 캐시에 추가 (향후 빠른 접근을 위해)
+                        file_size = len(content)
+                        self.file_cache[filename] = {
+                            'path': file_path,
+                            'content': content,
+                            'size': file_size,
+                            'created': datetime.now(),
+                            'type': 'pdf' if filename.endswith('.pdf') else 'txt'
+                        }
+                        print(f"✅ 파일을 메모리 캐시에 추가: {filename} ({file_size} bytes)")
+                        return content
+                    except Exception as e:
+                        print(f"⚠️ 파일 읽기 실패: {file_path} - {e}")
+                        continue
+            
+            print(f"❌ 파일을 찾을 수 없음: {filename}")
+            print(f"🔍 검색한 경로들: {possible_paths}")
             return None
             
         except Exception as e:
@@ -266,6 +297,59 @@ class DeploymentFileManager:
             'is_cloud': self.is_cloud,
             'total_size': sum(entry['size'] for entry in self.file_cache.values())
         }
+    
+    def optimize_memory(self, max_cache_size_mb: int = 50):
+        """메모리 최적화 - 캐시 크기 제한"""
+        try:
+            total_size_mb = sum(entry['size'] for entry in self.file_cache.values()) / (1024 * 1024)
+            
+            if total_size_mb > max_cache_size_mb:
+                print(f"⚠️ 메모리 최적화 필요: {total_size_mb:.2f}MB > {max_cache_size_mb}MB")
+                
+                # 가장 오래된 파일부터 제거
+                sorted_files = sorted(
+                    self.file_cache.items(),
+                    key=lambda x: x[1]['created']
+                )
+                
+                removed_count = 0
+                for filename, cache_entry in sorted_files:
+                    if total_size_mb <= max_cache_size_mb:
+                        break
+                    
+                    del self.file_cache[filename]
+                    removed_size_mb = cache_entry['size'] / (1024 * 1024)
+                    total_size_mb -= removed_size_mb
+                    removed_count += 1
+                    print(f"🗑️ 메모리 최적화로 제거: {filename} ({removed_size_mb:.2f}MB)")
+                
+                print(f"✅ 메모리 최적화 완료: {removed_count}개 파일 제거, {total_size_mb:.2f}MB")
+            
+        except Exception as e:
+            print(f"❌ 메모리 최적화 실패: {str(e)}")
+    
+    def ensure_file_persistence(self, filename: str) -> bool:
+        """파일 지속성 보장 (클라우드 환경에서 중요)"""
+        try:
+            if filename in self.file_cache:
+                # 메모리에 있는 파일을 임시 디렉토리에 저장
+                cache_entry = self.file_cache[filename]
+                temp_path = os.path.join(self.temp_dir, filename)
+                
+                with open(temp_path, 'wb') as f:
+                    if cache_entry['type'] == 'pdf':
+                        f.write(cache_entry['content'])
+                    else:
+                        f.write(cache_entry['content'].encode('utf-8'))
+                
+                print(f"✅ 파일 지속성 보장: {filename} -> {temp_path}")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"❌ 파일 지속성 보장 실패: {str(e)}")
+            return False
 
 # Flask 애플리케이션에 통합할 수 있는 헬퍼 함수들
 def create_deployment_safe_pdf(content: str, filename: str) -> Dict[str, Any]:
@@ -318,9 +402,21 @@ def serve_deployment_file(filename: str, as_attachment: bool = True) -> Tuple[by
     """배포 환경 파일 서빙"""
     file_manager = DeploymentFileManager()
     
+    print(f"🔍 파일 서빙 요청: {filename}")
+    
     file_content = file_manager.get_file_content(filename)
     if file_content is None:
+        # 파일을 찾을 수 없는 경우 더 자세한 정보 제공
+        print(f"❌ 파일을 찾을 수 없음: {filename}")
+        print(f"📦 현재 캐시 상태: {file_manager.get_cache_status()}")
+        
+        # 캐시된 파일 목록 출력
+        if file_manager.file_cache:
+            print(f"📋 캐시된 파일들: {list(file_manager.file_cache.keys())}")
+        
         raise FileNotFoundError(f"파일을 찾을 수 없습니다: {filename}")
+    
+    print(f"✅ 파일 서빙 성공: {filename} ({len(file_content)} bytes)")
     
     # MIME 타입 결정
     if filename.endswith('.pdf'):

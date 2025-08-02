@@ -163,7 +163,7 @@ class SimpleDocumentGenerator:
             return f"문서 생성 중 오류가 발생했습니다: {str(e)}"
     
     def generate_pdf_with_coordinates(self, doc_type, data, output_path):
-        """좌표 기반 PDF 생성 (폴백 기능 포함)"""
+        """좌표 기반 PDF 생성 (PDF만 강제 생성)"""
         print(f"🚀 PDF 생성 시작: {doc_type}")
         print(f"📁 출력 경로: {output_path}")
         print(f"📁 절대 출력 경로: {os.path.abspath(output_path)}")
@@ -177,7 +177,7 @@ class SimpleDocumentGenerator:
         
         if not PDF_AVAILABLE:
             print("❌ PDF 생성 불가: PyMuPDF 없음")
-            return self._generate_text_fallback(doc_type, data, output_path)
+            raise Exception("PDF 생성이 불가능합니다. PyMuPDF가 설치되지 않았습니다.")
         
         try:
             # 한글 문서 타입을 영문으로 매핑
@@ -210,10 +210,10 @@ class SimpleDocumentGenerator:
             # 파일 존재 확인
             if not os.path.exists(pdf_template):
                 print(f"⚠️ PDF 템플릿 파일이 없습니다: {pdf_template}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"PDF 템플릿 파일이 없습니다: {pdf_template}")
             if not os.path.exists(coord_file):
                 print(f"⚠️ 좌표 파일이 없습니다: {coord_file}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"좌표 파일이 없습니다: {coord_file}")
             
             # 좌표 정보 로드
             print(f"📖 좌표 파일 읽기 시작: {coord_file}")
@@ -223,7 +223,7 @@ class SimpleDocumentGenerator:
                 print(f"✅ 좌표 정보 로드됨: {len(coordinates)}개 필드")
             except Exception as e:
                 print(f"❌ 좌표 파일 읽기 실패: {e}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"좌표 파일 읽기 실패: {e}")
             
             # PDF 템플릿 열기
             print(f"📄 PDF 템플릿 열기: {pdf_template}")
@@ -233,7 +233,7 @@ class SimpleDocumentGenerator:
                 print(f"✅ PDF 템플릿 열기 성공")
             except Exception as e:
                 print(f"❌ PDF 템플릿 열기 실패: {e}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"PDF 템플릿 열기 실패: {e}")
             
             # 데이터를 좌표에 맞춰 삽입
             inserted_count = 0
@@ -284,12 +284,12 @@ class SimpleDocumentGenerator:
                 print(f"✅ 출력 디렉토리 확인: {output_dir}")
             except Exception as e:
                 print(f"❌ 출력 디렉토리 생성 실패: {e}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"출력 디렉토리 생성 실패: {e}")
             
             # 디렉토리 쓰기 권한 확인
             if not os.access(output_dir, os.W_OK):
                 print(f"❌ 출력 디렉토리 쓰기 권한 없음: {output_dir}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"출력 디렉토리 쓰기 권한 없음: {output_dir}")
             
             # PDF 저장
             print(f"💾 PDF 저장 시작: {output_path}")
@@ -299,7 +299,7 @@ class SimpleDocumentGenerator:
                 print(f"✅ PDF 저장 완료")
             except Exception as e:
                 print(f"❌ PDF 저장 실패: {e}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"PDF 저장 실패: {e}")
             
             # 파일 생성 확인
             if os.path.exists(output_path):
@@ -313,16 +313,15 @@ class SimpleDocumentGenerator:
                     return output_path
                 else:
                     print(f"❌ 파일 읽기 권한 없음: {output_path}")
-                    return self._generate_text_fallback(doc_type, data, output_path)
+                    raise Exception(f"PDF 파일 읽기 권한 없음: {output_path}")
             else:
                 print(f"❌ PDF 파일이 생성되지 않음: {output_path}")
-                return self._generate_text_fallback(doc_type, data, output_path)
+                raise Exception(f"PDF 파일이 생성되지 않음: {output_path}")
             
         except Exception as e:
             print(f"❌ PDF 생성 오류: {str(e)}")
             print(f"📋 상세 오류: {traceback.format_exc()}")
-            print("🔄 텍스트 폴백으로 전환")
-            return self._generate_text_fallback(doc_type, data, output_path)
+            raise Exception(f"PDF 생성 실패: {str(e)}")
     
     def _generate_text_fallback(self, doc_type, data, output_path):
         """PDF 생성 실패 시 텍스트 파일로 폴백"""
@@ -582,41 +581,17 @@ def api_document_generation():
                     **doc_data
                 )
                 
-                                 # 영문 파일명 생성 (한글 및 특수문자 제거)
-                 doc_type_mapping = {
-                     "상업송장": "commercial_invoice",
-                     "포장명세서": "packing_list"
-                 }
-                 english_doc_type = doc_type_mapping.get(doc_type, doc_type)
-                 
-                 # 안전한 파일명 생성 (영문만 사용)
-                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                 safe_filename = f"{english_doc_type}_{timestamp}.pdf"
-                 pdf_path = os.path.join(GENERATED_DOCS_DIR, safe_filename)
-                 
-                 print(f"📁 생성할 파일 경로: {pdf_path}")
-                 print(f"📁 절대 경로: {os.path.abspath(pdf_path)}")
-                 
-                 # PDF 생성 (폴백 기능 포함)
-                 generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
-                 
-                 if generated_file:
-                     # 파일 확장자에 따라 파일명 결정
-                     if generated_file.endswith('.txt'):
-                         # 텍스트 파일인 경우
-                         actual_filename = os.path.basename(generated_file)
-                         pdf_files[doc_type] = actual_filename
-                         documents[doc_type] = f"텍스트 파일로 생성됨: {actual_filename}"
-                     else:
-                         # PDF 파일인 경우 - 영문 파일명 사용
-                         pdf_files[doc_type] = safe_filename  # 영문 파일명 사용
-                         documents[doc_type] = pdf_data
-                     
-                     print(f"✅ {doc_type} 생성 완료: {generated_file}")
-                     print(f"📄 저장된 파일명: {safe_filename}")
-                 else:
-                     print(f"❌ {doc_type} 생성 실패")
-                     documents[doc_type] = f"❌ 서류 생성 실패"
+                # 영문 파일명 생성 (한글 및 특수문자 제거)
+                doc_type_mapping = {
+                    "상업송장": "commercial_invoice",
+                    "포장명세서": "packing_list"
+                }
+                english_doc_type = doc_type_mapping.get(doc_type, doc_type)
+                
+                # 안전한 파일명 생성 (영문만 사용)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                safe_filename = f"{english_doc_type}_{timestamp}.pdf"
+                pdf_path = os.path.join(GENERATED_DOCS_DIR, safe_filename)
                 
                 print(f"📁 생성할 파일 경로: {pdf_path}")
                 print(f"📁 절대 경로: {os.path.abspath(pdf_path)}")
@@ -625,21 +600,15 @@ def api_document_generation():
                 generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
                 
                 if generated_file:
-                    # 파일 확장자에 따라 파일명 결정
-                    if generated_file.endswith('.txt'):
-                        # 텍스트 파일인 경우
-                        actual_filename = os.path.basename(generated_file)
-                        pdf_files[doc_type] = actual_filename
-                        documents[doc_type] = f"텍스트 파일로 생성됨: {actual_filename}"
-                    else:
-                        # PDF 파일인 경우
-                        pdf_files[doc_type] = safe_filename
-                        documents[doc_type] = pdf_data
+                    # PDF 파일만 생성됨
+                    pdf_files[doc_type] = safe_filename  # 영문 파일명 사용
+                    documents[doc_type] = pdf_data
                     
-                    print(f"✅ {doc_type} 생성 완료: {generated_file}")
+                    print(f"✅ {doc_type} PDF 생성 완료: {generated_file}")
+                    print(f"📄 저장된 파일명: {safe_filename}")
                 else:
-                    print(f"❌ {doc_type} 생성 실패")
-                    documents[doc_type] = f"❌ 서류 생성 실패"
+                    print(f"❌ {doc_type} PDF 생성 실패")
+                    documents[doc_type] = f"❌ PDF 생성 실패"
                 
             except Exception as e:
                 print(f"❌ {doc_type} 생성 실패: {str(e)}")
@@ -648,12 +617,12 @@ def api_document_generation():
         print(f"✅ 서류 생성 완료: {len(documents)}개")
         print(f"📄 생성된 서류: {list(documents.keys())}")
         
-                 # 다운로드 URL 생성 (영문 파일명 사용)
-         download_urls = {}
-         for doc_name, filename in pdf_files.items():
-             # 영문 파일명을 URL에 사용
-             download_urls[doc_name] = f"/api/download-document/{filename}"
-             print(f"🔗 {doc_name} 다운로드 URL: {download_urls[doc_name]}")
+        # 다운로드 URL 생성 (영문 파일명 사용)
+        download_urls = {}
+        for doc_name, filename in pdf_files.items():
+            # 영문 파일명을 URL에 사용
+            download_urls[doc_name] = f"/api/download-document/{filename}"
+            print(f"🔗 {doc_name} 다운로드 URL: {download_urls[doc_name]}")
         
         return jsonify({
             'success': True,
