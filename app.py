@@ -4622,6 +4622,26 @@ def api_document_generation():
                     if os.path.exists(pdf_path):
                         file_size = os.path.getsize(pdf_path)
                         print(f"✅ PDF 생성 성공: {pdf_path} ({file_size} bytes)")
+                        
+                        # 🔧 배포 환경 파일 캐시에 저장
+                        try:
+                            # PDF 파일을 바이너리로 읽기
+                            with open(pdf_path, 'rb') as pdf_file:
+                                pdf_content = pdf_file.read()
+                            
+                            # 배포 환경 파일 매니저의 캐시에 저장
+                            file_manager.file_cache[pdf_filename] = {
+                                'path': pdf_path,
+                                'content': pdf_content,  # 바이너리 데이터로 저장
+                                'size': file_size,
+                                'created': datetime.now(),
+                                'type': 'pdf'
+                            }
+                            print(f"✅ 배포 환경 파일 캐시에 저장: {pdf_filename}")
+                            
+                        except Exception as cache_error:
+                            print(f"⚠️ 파일 캐시 저장 실패: {cache_error}")
+                        
                     else:
                         print(f"❌ PDF 파일이 생성되지 않음: {pdf_path}")
                         raise Exception("PDF 파일 생성 실패")
@@ -4638,6 +4658,22 @@ def api_document_generation():
                             pdf_path
                         )
                         print("✅ enhanced_template_pdf_generator로 PDF 생성 성공")
+                        
+                        # 파일 캐시에 저장
+                        if os.path.exists(pdf_path):
+                            try:
+                                with open(pdf_path, 'rb') as pdf_file:
+                                    pdf_content = pdf_file.read()
+                                file_manager.file_cache[pdf_filename] = {
+                                    'path': pdf_path,
+                                    'content': pdf_content,
+                                    'size': os.path.getsize(pdf_path),
+                                    'created': datetime.now(),
+                                    'type': 'pdf'
+                                }
+                                print(f"✅ 대체 방식으로 생성된 파일 캐시 저장: {pdf_filename}")
+                            except Exception as cache_error:
+                                print(f"⚠️ 대체 PDF 파일 캐시 저장 실패: {cache_error}")
                     except ImportError:
                         # enhanced_template_pdf_generator가 없으면 간단한 PDF 생성
                         print("⚠️ enhanced_template_pdf_generator 없음, 간단한 PDF 생성")
@@ -4645,6 +4681,22 @@ def api_document_generation():
                             from simple_pdf_generator import generate_simple_pdf
                             generate_simple_pdf(content, pdf_path, doc_name)
                             print("✅ simple_pdf_generator로 PDF 생성 성공")
+                            
+                            # 파일 캐시에 저장
+                            if os.path.exists(pdf_path):
+                                try:
+                                    with open(pdf_path, 'rb') as pdf_file:
+                                        pdf_content = pdf_file.read()
+                                    file_manager.file_cache[pdf_filename] = {
+                                        'path': pdf_path,
+                                        'content': pdf_content,
+                                        'size': os.path.getsize(pdf_path),
+                                        'created': datetime.now(),
+                                        'type': 'pdf'
+                                    }
+                                    print(f"✅ 간단한 PDF 생성 파일 캐시 저장: {pdf_filename}")
+                                except Exception as cache_error:
+                                    print(f"⚠️ 간단한 PDF 파일 캐시 저장 실패: {cache_error}")
                         except ImportError:
                             print("❌ 모든 PDF 생성기 로드 실패, 텍스트 파일로 대체")
                             raise ImportError("PDF 생성기를 찾을 수 없습니다")
@@ -4664,8 +4716,21 @@ def api_document_generation():
                         
                         with open(txt_path, 'w', encoding='utf-8') as f:
                             f.write(f"=== {doc_name} ===\n\n{content}")
+                        
+                        # 텍스트 파일도 캐시에 저장
+                        try:
+                            file_manager.file_cache[txt_filename] = {
+                                'path': txt_path,
+                                'content': f"=== {doc_name} ===\n\n{content}",
+                                'size': len(f"=== {doc_name} ===\n\n{content}"),
+                                'created': datetime.now(),
+                                'type': 'txt'
+                            }
+                            print(f"✅ 텍스트 파일로 대체 생성 및 캐시 저장: {txt_path}")
+                        except Exception as cache_error:
+                            print(f"⚠️ 텍스트 파일 캐시 저장 실패: {cache_error}")
+                        
                         pdf_files[doc_name] = txt_filename
-                        print(f"✅ 텍스트 파일로 대체 생성: {txt_path}")
                         continue
                     except Exception as txt_error:
                         print(f"❌ 텍스트 파일 생성도 실패: {txt_error}")
@@ -4679,6 +4744,20 @@ def api_document_generation():
                     txt_path = os.path.join("generated_documents", txt_filename)
                     with open(txt_path, 'w', encoding='utf-8') as f:
                         f.write(f"=== {doc_name} ===\n\n{content}")
+                    
+                    # 텍스트 파일 캐시에 저장
+                    try:
+                        file_manager.file_cache[txt_filename] = {
+                            'path': txt_path,
+                            'content': f"=== {doc_name} ===\n\n{content}",
+                            'size': len(f"=== {doc_name} ===\n\n{content}"),
+                            'created': datetime.now(),
+                            'type': 'txt'
+                        }
+                        print(f"✅ 두 번째 텍스트 파일 폴백 캐시 저장: {txt_filename}")
+                    except Exception as cache_error:
+                        print(f"⚠️ 두 번째 텍스트 파일 캐시 저장 실패: {cache_error}")
+                    
                     pdf_files[doc_name] = txt_filename
                     continue
                 print(f"✅ 개선된 템플릿 기반 PDF 생성 성공: {pdf_path}")  # 디버그 로그 추가
@@ -5881,7 +5960,16 @@ def download_document(filename):
         
     except FileNotFoundError as e:
         print(f"❌ 파일 없음: {filename}")
-        return jsonify({'error': str(e)}), 404
+        print(f"📁 현재 파일 캐시: {list(file_manager.file_cache.keys())}")
+        return jsonify({
+            'error': f'파일을 찾을 수 없습니다: {filename}',
+            'available_files': list(file_manager.file_cache.keys()),
+            'debug_info': {
+                'requested_file': filename,
+                'cache_size': len(file_manager.file_cache),
+                'is_cloud': file_manager.is_cloud
+            }
+        }), 404
     except Exception as e:
         print(f"❌ 다운로드 오류: {str(e)}")
         return jsonify({'error': f'다운로드 중 오류가 발생했습니다: {str(e)}'}), 500
@@ -5895,6 +5983,31 @@ def get_template_info(doc_type):
         return jsonify(info)
     except Exception as e:
         return jsonify({'error': str(e)})
+
+@app.route('/api/debug/file-cache')
+def debug_file_cache():
+    """파일 캐시 상태 디버그 엔드포인트"""
+    try:
+        cache_info = {
+            'cache_size': len(file_manager.file_cache),
+            'is_cloud_environment': file_manager.is_cloud,
+            'temp_directory': file_manager.temp_dir,
+            'available_files': []
+        }
+        
+        # 캐시된 파일 정보
+        for filename, file_info in file_manager.file_cache.items():
+            cache_info['available_files'].append({
+                'filename': filename,
+                'size': file_info.get('size', 0),
+                'type': file_info.get('type', 'unknown'),
+                'created': file_info.get('created', '').strftime('%Y-%m-%d %H:%M:%S') if file_info.get('created') else '',
+                'path_exists': os.path.exists(file_info.get('path', '')) if file_info.get('path') else False
+            })
+        
+        return jsonify(cache_info)
+    except Exception as e:
+        return jsonify({'error': f'디버그 정보 조회 실패: {str(e)}'})
 
 @app.route('/api/ocr-extract', methods=['POST'])
 def api_ocr_extract():
