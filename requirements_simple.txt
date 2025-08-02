@@ -1,8 +1,4 @@
-# 배포 환경용 의존성 (서류 생성 API + PDF 생성)
-Flask==2.3.3
-requests==2.31.0
-PyMuPDF==1.26.3
-
-# 선택적 PDF 생성 (필요시에만)
-# reportlab==4.0.4
-# fpdf==1.7.2 
+Flask==3.1.1
+Flask-CORS==6.0.1
+gunicorn==23.0.0
+Werkzeug==3.1.3 
