@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-🚀 KATI 간단 배포 버전
-- 핵심 기능만 포함
-- 무거운 모듈 제거
-- 빠른 시작을 위한 최적화
+🚀 KATI 최소 배포 버전
+- 최소한의 기능만 포함
+- 안정적인 배포를 위한 단순화
 """
 
 import os
@@ -19,55 +18,37 @@ app = Flask(__name__)
 CORS(app)
 
 # 기본 설정
-app.secret_key = os.environ.get('SECRET_KEY', 'kati_simple_secret_key_2024')
-app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploaded_documents')
+app.secret_key = os.environ.get('SECRET_KEY', 'kati_minimal_secret_key_2024')
 
 # 환경 감지
 IS_RENDER = os.environ.get('RENDER') is not None
 IS_CLOUD = IS_RENDER
 
-print(f"🚀 KATI 간단 버전 시작 - 환경: {'클라우드' if IS_CLOUD else '로컬'}")
+print(f"🚀 KATI 최소 버전 시작 - 환경: {'클라우드' if IS_CLOUD else '로컬'}")
 
 # 기본 라우트
 @app.route('/')
 def index():
     """메인 페이지"""
-    return render_template('index.html')
+    return jsonify({
+        'message': 'KATI 시스템이 정상적으로 작동 중입니다',
+        'status': 'operational',
+        'version': 'minimal-1.0',
+        'timestamp': datetime.now().isoformat()
+    })
 
-@app.route('/dashboard')
-def dashboard():
-    """대시보드"""
-    return render_template('dashboard.html')
-
-@app.route('/document-generation')
-def document_generation():
-    """서류 생성 페이지"""
-    return render_template('document_generation.html')
-
-@app.route('/nutrition-label')
-def nutrition_label():
-    """영양성분표 페이지"""
-    return render_template('nutrition_label.html')
-
-@app.route('/compliance-analysis')
-def compliance_analysis():
-    """규정 준수 분석 페이지"""
-    return render_template('compliance_analysis.html')
-
-@app.route('/customs-analysis')
-def customs_analysis():
-    """통관 분석 페이지"""
-    return render_template('customs_analysis.html')
-
-@app.route('/regulation-info')
-def regulation_info():
-    """규정 정보 페이지"""
-    return render_template('regulation_info.html')
-
-# API 라우트
-@app.route('/api/health', methods=['GET'])
-def health_check():
+@app.route('/health')
+def health():
     """헬스 체크"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'environment': 'cloud' if IS_CLOUD else 'local'
+    })
+
+@app.route('/api/health', methods=['GET'])
+def api_health_check():
+    """API 헬스 체크"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
@@ -79,14 +60,14 @@ def api_system_status():
     """시스템 상태"""
     return jsonify({
         'status': 'operational',
-        'version': 'simple-1.0',
+        'version': 'minimal-1.0',
         'environment': 'cloud' if IS_CLOUD else 'local',
         'timestamp': datetime.now().isoformat()
     })
 
 @app.route('/api/document-generation', methods=['POST'])
 def api_document_generation():
-    """서류 생성 API (간단 버전)"""
+    """서류 생성 API (최소 버전)"""
     try:
         data = request.get_json()
         
@@ -94,70 +75,12 @@ def api_document_generation():
         if not data:
             return jsonify({'error': '데이터가 없습니다'}), 400
         
-        # 간단한 서류 생성 (텍스트 파일)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        
-        # 상업송장 생성
-        commercial_invoice_content = f"""
-=== 상업송장 (Commercial Invoice) ===
-생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-판매자 정보:
-- 회사명: {data.get('company_name', '한국기업')}
-- 주소: {data.get('company_address', '서울시 강남구')}
-- 연락처: {data.get('company_phone', '02-1234-5678')}
-
-제품 정보:
-- 제품명: {data.get('product_name', '제품')}
-- 수량: {data.get('quantity', 1)}
-- 단가: ${data.get('unit_price', 10)}
-- 총액: ${data.get('quantity', 1) * data.get('unit_price', 10)}
-
-배송 정보:
-- 목적지: {data.get('destination', '미국')}
-- 운송방법: {data.get('shipping_method', '해상운송')}
-
-이 문서는 KATI 시스템에서 자동 생성되었습니다.
-        """
-        
-        # 포장명세서 생성
-        packing_list_content = f"""
-=== 포장명세서 (Packing List) ===
-생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-포장 정보:
-- 포장번호: PKG-{timestamp}
-- 총 포장수: 1
-
-제품 정보:
-- 제품명: {data.get('product_name', '제품')}
-- 수량: {data.get('quantity', 1)}
-- 무게: {data.get('weight', 1)}kg
-- 포장타입: Carton
-
-이 문서는 KATI 시스템에서 자동 생성되었습니다.
-        """
-        
-        # 파일 저장
-        os.makedirs('generated_documents', exist_ok=True)
-        
-        commercial_invoice_filename = f"상업송장_{timestamp}.txt"
-        packing_list_filename = f"포장명세서_{timestamp}.txt"
-        
-        with open(os.path.join('generated_documents', commercial_invoice_filename), 'w', encoding='utf-8') as f:
-            f.write(commercial_invoice_content)
-        
-        with open(os.path.join('generated_documents', packing_list_filename), 'w', encoding='utf-8') as f:
-            f.write(packing_list_content)
-        
+        # 간단한 응답
         return jsonify({
             'success': True,
-            'message': '서류 생성 완료',
-            'documents': {
-                '상업송장': commercial_invoice_filename,
-                '포장명세서': packing_list_filename
-            },
-            'note': '간단 버전: 텍스트 파일로 생성되었습니다'
+            'message': '서류 생성 요청이 정상적으로 처리되었습니다',
+            'note': '최소 버전에서는 실제 파일 생성이 비활성화되어 있습니다',
+            'timestamp': datetime.now().isoformat()
         })
         
     except Exception as e:
@@ -168,15 +91,12 @@ def api_document_generation():
 
 @app.route('/api/download-document/<filename>')
 def download_document(filename):
-    """문서 다운로드"""
-    try:
-        file_path = os.path.join('generated_documents', filename)
-        if os.path.exists(file_path):
-            return send_file(file_path, as_attachment=True)
-        else:
-            return jsonify({'error': '파일을 찾을 수 없습니다'}), 404
-    except Exception as e:
-        return jsonify({'error': f'다운로드 실패: {str(e)}'}), 500
+    """문서 다운로드 (최소 버전)"""
+    return jsonify({
+        'error': '최소 버전에서는 파일 다운로드가 비활성화되어 있습니다',
+        'filename': filename,
+        'timestamp': datetime.now().isoformat()
+    }), 404
 
 @app.route('/api/dashboard-stats')
 def api_dashboard_stats():
@@ -198,7 +118,7 @@ def internal_error(error):
     return jsonify({'error': '서버 내부 오류가 발생했습니다'}), 500
 
 if __name__ == '__main__':
-    print("✅ KATI 간단 버전 서버 시작")
+    print("✅ KATI 최소 버전 서버 시작")
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 서버 포트: {port}")
     print(f"🌍 호스트: 0.0.0.0")
