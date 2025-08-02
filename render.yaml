@@ -3,7 +3,7 @@ services:
     name: kati-basic
     env: python
     buildCommand: pip install -r requirements_simple.txt
-    startCommand: gunicorn app_simple:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn app_simple:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18 
+        value: 3.8.18 
