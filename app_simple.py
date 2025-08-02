@@ -2,18 +2,29 @@
 # -*- coding: utf-8 -*-
 
 """
-🌐 KATI 간단한 서류 생성 API - 배포 환경용 (PDF 생성 포함)
+🌐 KATI 서류 생성 API - 배포 환경용 (PDF 생성 포함)
 - 좌표 매핑된 PDF 템플릿 활용
 - 배포 환경에서 안정적으로 작동
+- 오류 발생 시 폴백 기능 제공
 """
 
 from flask import Flask, request, jsonify, send_file
 from datetime import datetime
 import os
 import json
-import fitz  # PyMuPDF
+import traceback
 
 app = Flask(__name__)
+
+# PyMuPDF 임포트 시도 (배포 환경에서 안정성 확보)
+try:
+    import fitz  # PyMuPDF
+    PDF_AVAILABLE = True
+    print("✅ PyMuPDF 로드 성공")
+except ImportError as e:
+    PDF_AVAILABLE = False
+    print(f"⚠️ PyMuPDF 로드 실패: {e}")
+    print("📝 텍스트 형태로만 서류 생성")
 
 class SimpleDocumentGenerator:
     """간단한 서류 생성기 (PDF 포함)"""
@@ -30,6 +41,20 @@ class SimpleDocumentGenerator:
                 "coordinates": "uploaded_templates/포장명세서 좌표 반영.json"
             }
         }
+        
+        # 템플릿 파일 존재 확인
+        self._check_template_files()
+    
+    def _check_template_files(self):
+        """템플릿 파일 존재 확인"""
+        print("🔍 템플릿 파일 확인 중...")
+        for doc_type, files in self.template_files.items():
+            pdf_exists = os.path.exists(files["pdf"])
+            coord_exists = os.path.exists(files["coordinates"])
+            print(f"📄 {doc_type}: PDF={pdf_exists}, 좌표={coord_exists}")
+            
+            if not pdf_exists or not coord_exists:
+                print(f"⚠️ {doc_type} 템플릿 파일 누락")
     
     def generate_document(self, doc_type, country, product, company_info, **kwargs):
         """문서 생성 메인 함수"""
@@ -45,7 +70,11 @@ class SimpleDocumentGenerator:
             return f"문서 생성 중 오류가 발생했습니다: {str(e)}"
     
     def generate_pdf_with_coordinates(self, doc_type, data, output_path):
-        """좌표 기반 PDF 생성"""
+        """좌표 기반 PDF 생성 (폴백 기능 포함)"""
+        if not PDF_AVAILABLE:
+            print("❌ PDF 생성 불가: PyMuPDF 없음")
+            return self._generate_text_fallback(doc_type, data, output_path)
+        
         try:
             print(f"📄 PDF 생성 시작: {doc_type}")
             
@@ -62,9 +91,11 @@ class SimpleDocumentGenerator:
             
             # 파일 존재 확인
             if not os.path.exists(pdf_template):
-                raise FileNotFoundError(f"PDF 템플릿 파일이 없습니다: {pdf_template}")
+                print(f"⚠️ PDF 템플릿 파일이 없습니다: {pdf_template}")
+                return self._generate_text_fallback(doc_type, data, output_path)
             if not os.path.exists(coord_file):
-                raise FileNotFoundError(f"좌표 파일이 없습니다: {coord_file}")
+                print(f"⚠️ 좌표 파일이 없습니다: {coord_file}")
+                return self._generate_text_fallback(doc_type, data, output_path)
             
             # 좌표 정보 로드
             with open(coord_file, 'r', encoding='utf-8') as f:
@@ -123,7 +154,42 @@ class SimpleDocumentGenerator:
             
         except Exception as e:
             print(f"❌ PDF 생성 오류: {str(e)}")
-            raise e
+            print(f"📋 상세 오류: {traceback.format_exc()}")
+            print("🔄 텍스트 폴백으로 전환")
+            return self._generate_text_fallback(doc_type, data, output_path)
+    
+    def _generate_text_fallback(self, doc_type, data, output_path):
+        """PDF 생성 실패 시 텍스트 파일로 폴백"""
+        try:
+            # 텍스트 파일로 저장
+            text_path = output_path.replace('.pdf', '.txt')
+            
+            lines = []
+            lines.append(f"=== {doc_type} ===")
+            lines.append(f"생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            lines.append("")
+            
+            for field_name, value in data.items():
+                if value:
+                    lines.append(f"{field_name}: {value}")
+            
+            lines.append("")
+            lines.append("KATI 수출 지원 시스템에서 생성된 서류입니다.")
+            
+            # 출력 디렉토리 생성
+            output_dir = os.path.dirname(text_path)
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # 텍스트 파일 저장
+            with open(text_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+            
+            print(f"✅ 텍스트 파일 생성 완료: {text_path}")
+            return text_path
+            
+        except Exception as e:
+            print(f"❌ 텍스트 폴백도 실패: {str(e)}")
+            return None
     
     def _split_text_into_lines(self, text, chars_per_line, max_lines):
         """텍스트를 여러 줄로 분할"""
@@ -236,7 +302,8 @@ def index():
     return jsonify({
         'message': 'KATI 수출 지원 시스템 - 서류 생성 API (PDF 포함)',
         'status': 'running',
-        'version': '1.0.0'
+        'version': '1.0.0',
+        'pdf_available': PDF_AVAILABLE
     })
 
 @app.route('/api/health')
@@ -245,7 +312,8 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'service': 'KATI Document Generator'
+        'service': 'KATI Document Generator',
+        'pdf_available': PDF_AVAILABLE
     })
 
 @app.route('/api/document-generation', methods=['POST'])
@@ -327,12 +395,25 @@ def api_document_generation():
                 pdf_filename = f"{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
                 pdf_path = os.path.join("generated_documents", pdf_filename)
                 
-                # PDF 생성
-                doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
+                # PDF 생성 (폴백 기능 포함)
+                generated_file = doc_generator.generate_pdf_with_coordinates(doc_type, pdf_data, pdf_path)
                 
-                documents[doc_type] = pdf_data
-                pdf_files[doc_type] = pdf_filename
-                print(f"✅ {doc_type} 생성 완료")
+                if generated_file:
+                    # 파일 확장자에 따라 파일명 결정
+                    if generated_file.endswith('.txt'):
+                        # 텍스트 파일인 경우
+                        actual_filename = os.path.basename(generated_file)
+                        pdf_files[doc_type] = actual_filename
+                        documents[doc_type] = f"텍스트 파일로 생성됨: {actual_filename}"
+                    else:
+                        # PDF 파일인 경우
+                        pdf_files[doc_type] = pdf_filename
+                        documents[doc_type] = pdf_data
+                    
+                    print(f"✅ {doc_type} 생성 완료")
+                else:
+                    print(f"❌ {doc_type} 생성 실패")
+                    documents[doc_type] = f"❌ 서류 생성 실패"
                 
             except Exception as e:
                 print(f"❌ {doc_type} 생성 실패: {str(e)}")
@@ -341,34 +422,34 @@ def api_document_generation():
         print(f"✅ 서류 생성 완료: {len(documents)}개")
         print(f"📄 생성된 서류: {list(documents.keys())}")
         
-        # PDF 다운로드 URL 생성
-        pdf_download_urls = {}
+        # 다운로드 URL 생성
+        download_urls = {}
         for doc_name, filename in pdf_files.items():
-            pdf_download_urls[doc_name] = f"/api/download-document/{filename}"
+            download_urls[doc_name] = f"/api/download-document/{filename}"
         
         return jsonify({
             'success': True,
             'message': '서류 생성 완료',
             'documents': documents,
             'pdf_files': pdf_files,
-            'download_urls': pdf_download_urls,
+            'download_urls': download_urls,
             'generated_count': len(pdf_files),
+            'pdf_available': PDF_AVAILABLE,
             'download_instructions': {
                 'method': 'GET',
-                'urls': pdf_download_urls,
+                'urls': download_urls,
                 'note': '각 URL을 브라우저에서 직접 접속하거나 JavaScript로 window.open() 사용'
             }
         })
         
     except Exception as e:
         print(f"❌ 서류 생성 API 전체 오류: {str(e)}")
-        import traceback
         print(f"📋 상세 오류: {traceback.format_exc()}")
         return jsonify({'error': f'서류 생성 실패: {str(e)}'})
 
 @app.route('/api/download-document/<filename>')
 def download_document(filename):
-    """PDF 파일 다운로드"""
+    """파일 다운로드 (PDF 또는 텍스트)"""
     try:
         file_path = os.path.join("generated_documents", filename)
         if os.path.exists(file_path):
@@ -388,11 +469,12 @@ def api_system_status():
         'environment': 'production',
         'features': {
             'document_generation': True,
-            'pdf_generation': True,  # PDF 생성 활성화
+            'pdf_generation': PDF_AVAILABLE,  # PDF 사용 가능 여부
             'ocr_processing': False,
             'ai_services': False
         },
         'supported_documents': ['상업송장', '포장명세서'],
+        'pdf_available': PDF_AVAILABLE,
         'timestamp': datetime.now().isoformat()
     })
 
@@ -403,6 +485,7 @@ if __name__ == '__main__':
     print("  - 포장명세서 생성 (PDF)")
     print("  - 좌표 기반 PDF 생성")
     print("  - 배포 환경 최적화")
+    print(f"  - PDF 사용 가능: {PDF_AVAILABLE}")
     
     # 포트 설정 (환경 변수에서 가져오거나 기본값 사용)
     port = int(os.environ.get('PORT', 5000))
