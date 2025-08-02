@@ -249,16 +249,35 @@ class TemplateBasedPDFGenerator:
     def _generate_fallback_pdf(self, doc_type: str, data: Dict, output_path: str) -> str:
         """폴백: 기본 PDF 생성"""
         try:
-            try:
-    from simple_pdf_generator import SimplePDFGenerator
-    simple_pdf_generator = SimplePDFGenerator()
-except ImportError:
-    simple_pdf_generator = None
+            from simple_pdf_generator import SimplePDFGenerator
             pdf_generator = SimplePDFGenerator()
-            return pdf_generator.generate_pdf(doc_type, data, output_path)
+            
+            # 데이터를 텍스트로 변환
+            content = f"=== {doc_type} ===\n\n"
+            for key, value in data.items():
+                content += f"{key}: {value}\n"
+            
+            success = pdf_generator.generate_pdf(content, output_path, doc_type)
+            if success:
+                return output_path
+            else:
+                # 텍스트 파일로 대체
+                txt_path = output_path.replace('.pdf', '.txt')
+                with open(txt_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                return txt_path
+                
         except Exception as e:
             print(f"❌ 폴백 PDF 생성도 실패: {e}")
-            return output_path
+            # 텍스트 파일로 대체
+            txt_path = output_path.replace('.pdf', '.txt')
+            content = f"=== {doc_type} ===\n\n"
+            for key, value in data.items():
+                content += f"{key}: {value}\n"
+            
+            with open(txt_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return txt_path
     
     def get_template_info(self, doc_type: str) -> Dict:
         """템플릿 정보 반환"""

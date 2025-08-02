@@ -406,14 +406,9 @@ except ImportError as e:
 
 try:
     from simple_pdf_generator import SimplePDFGenerator
-    simple_pdf_generator = SimplePDFGenerator()
     print("✅ 간단 PDF 생성기 import 성공")
 except ImportError as e:
     print(f"⚠️ 간단 PDF 생성기를 찾을 수 없습니다: {e}")
-    simple_pdf_generator = None
-except Exception as e:
-    print(f"⚠️ 간단 PDF 생성기 초기화 실패: {e}")
-    simple_pdf_generator = None
 
 try:
     from label_ocr_extractor import LabelOCRExtractor
@@ -4672,13 +4667,9 @@ def api_document_generation():
                         # enhanced_template_pdf_generator가 없으면 간단한 PDF 생성
                         print("⚠️ enhanced_template_pdf_generator 없음, 간단한 PDF 생성")
                         try:
-                            if simple_pdf_generator:
-                                simple_pdf_generator.generate_pdf(content, pdf_path, doc_name)
-                                print("✅ simple_pdf_generator 클래스로 PDF 생성 성공")
-                            else:
-                                from simple_pdf_generator import generate_simple_pdf
-                                generate_simple_pdf(content, pdf_path, doc_name)
-                                print("✅ simple_pdf_generator 함수로 PDF 생성 성공")
+                            from simple_pdf_generator import generate_simple_pdf
+                            generate_simple_pdf(content, pdf_path, doc_name)
+                            print("✅ simple_pdf_generator로 PDF 생성 성공")
                             
                             # 배포 환경에서 파일을 캐시에 등록
                             if os.path.exists(pdf_path):
@@ -4791,14 +4782,10 @@ def api_document_generation():
                     if not pdf_created:
                         try:
                             print("🔄 simple_pdf_generator 재시도...")
-                            if simple_pdf_generator:
-                                simple_pdf_generator.generate_pdf(content, pdf_path, doc_name)
-                                print("✅ simple_pdf_generator 클래스 재시도 성공")
-                            else:
-                                from simple_pdf_generator import generate_simple_pdf
-                                generate_simple_pdf(content, pdf_path, doc_name)
-                                print("✅ simple_pdf_generator 함수 재시도 성공")
+                            from simple_pdf_generator import generate_simple_pdf
+                            generate_simple_pdf(content, pdf_path, doc_name)
                             pdf_created = True
+                            print("✅ simple_pdf_generator 재시도 성공")
                             
                             # 배포 환경에서 파일을 캐시에 등록
                             if os.path.exists(pdf_path):
@@ -4951,10 +4938,10 @@ def api_document_generation():
             
             # PDF 생성에 실패했지만 텍스트 문서는 생성된 경우
             if documents:
-            return jsonify({
-                'success': True,
+                return jsonify({
+                    'success': True,
                     'message': '서류 생성 완료 (PDF 생성 실패, 텍스트 문서만 제공)',
-                'documents': documents,
+                    'documents': documents,
                     'pdf_error': str(pdf_error),
                     'note': 'PDF 생성에 실패했지만 텍스트 문서는 생성되었습니다. 텍스트를 복사하여 사용하세요.',
                     'debug_info': {
@@ -8000,20 +7987,13 @@ def api_pdf_form_fill():
         # 3. simple_pdf_generator 시도
         if not pdf_created:
             try:
-                if simple_pdf_generator:
-                    output_filename = f"filled_{os.path.basename(full_path)}"
-                    output_path = os.path.join("generated_documents", output_filename)
-                    content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
-                    simple_pdf_generator.generate_pdf(content, output_path, "filled_form")
-                    print("✅ simple_pdf_generator 클래스로 PDF 생성 성공")
-                else:
-                    from simple_pdf_generator import generate_simple_pdf
-                    output_filename = f"filled_{os.path.basename(full_path)}"
-                    output_path = os.path.join("generated_documents", output_filename)
-                    content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
-                    generate_simple_pdf(content, output_path, "filled_form")
-                    print("✅ simple_pdf_generator 함수로 PDF 생성 성공")
+                from simple_pdf_generator import generate_simple_pdf
+                output_filename = f"filled_{os.path.basename(full_path)}"
+                output_path = os.path.join("generated_documents", output_filename)
+                content = f"Form Data: {json.dumps(form_data, ensure_ascii=False)}\nUser Input: {json.dumps(user_input, ensure_ascii=False)}"
+                generate_simple_pdf(content, output_path, "filled_form")
                 pdf_created = True
+                print("✅ simple_pdf_generator로 PDF 생성 성공")
             except Exception as e:
                 print(f"❌ simple_pdf_generator 실패: {e}")
         
