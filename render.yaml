@@ -1,11 +1,9 @@
 services:
   - type: web
-    name: kati-minimal
+    name: kati-basic
     env: python
     buildCommand: pip install -r requirements_simple.txt
-    startCommand: gunicorn app_simple:app --bind 0.0.0.0:$PORT --timeout 30 --workers 1 --preload
+    startCommand: gunicorn app_simple:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18
-      - key: PORT
-        value: 10000 
+        value: 3.9.18 
