@@ -4980,7 +4980,33 @@ def api_document_generation():
                     'cache_status': 'unknown'
                 }
             
-                    return jsonify({
+            return jsonify({
+                'error': f'서류 생성 실패: {str(e)}',
+                'debug_info': debug_info
+            })
+
+    except Exception as e:
+        print(f"❌ 서류 생성 API 오류: {str(e)}")
+        import traceback
+        print(f"📋 상세 오류: {traceback.format_exc()}")
+        
+        # 배포 환경 정보 포함
+        try:
+            debug_info = {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'environment': 'cloud' if file_manager.is_cloud else 'local',
+                'cache_status': file_manager.get_cache_status() if 'file_manager' in locals() else 'unknown'
+            }
+        except:
+            debug_info = {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'environment': 'unknown',
+                'cache_status': 'unknown'
+            }
+        
+        return jsonify({
             'error': f'서류 생성 실패: {str(e)}',
             'debug_info': debug_info
         })
