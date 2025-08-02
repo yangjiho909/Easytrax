@@ -4647,6 +4647,16 @@ def api_document_generation():
                 'documents': documents,
                 'pdf_error': str(pdf_error)
             })
+        except Exception as e:
+            print(f"❌ 서류 생성 API 오류: {str(e)}")
+            import traceback
+            print(f"📋 상세 오류: {traceback.format_exc()}")
+            return jsonify({'error': f'서류 생성 실패: {str(e)}'})
+    except Exception as e:
+        print(f"❌ 서류 생성 API 전체 오류: {str(e)}")
+        import traceback
+        print(f"📋 상세 오류: {traceback.format_exc()}")
+        return jsonify({'error': f'서류 생성 실패: {str(e)}'})
 
 def process_uploaded_files(files):
     """업로드된 파일들을 OCR 처리 (개선된 버전)"""
